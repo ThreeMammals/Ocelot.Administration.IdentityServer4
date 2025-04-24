@@ -141,11 +141,11 @@ public sealed class CacheManagerTests2 : Steps
     {
         Action<ConfigurationBuilderCachePart> settings = (s) =>
         {
-            s.WithMicrosoftLogging(log =>
-            {
-                //log.AddConsole(LogLevel.Debug);
-            })
-            .WithDictionaryHandle();
+            //s.WithMicrosoftLogging(log =>
+            //{
+            //    //log.AddConsole(LogLevel.Debug);
+            //})
+            s.WithDictionaryHandle();
         };
         services.AddMvc(option => option.EnableEndpointRouting = false);
         services.AddOcelot()

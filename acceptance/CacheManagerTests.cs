@@ -134,11 +134,11 @@ public class CacheManagerTests : Steps //IDisposable
             {
                 Action<ConfigurationBuilderCachePart> settings = (s) =>
                 {
-                    s.WithMicrosoftLogging(log =>
-                    {
-                        //log.AddConsole(LogLevel.Debug);
-                    })
-                    .WithDictionaryHandle();
+                    //s.WithMicrosoftLogging(log =>
+                    //{
+                    //    //log.AddConsole(LogLevel.Debug);
+                    //})
+                    s.WithDictionaryHandle();
                 };
                 x.AddMvc(option => option.EnableEndpointRouting = false);
                 x.AddOcelot()
