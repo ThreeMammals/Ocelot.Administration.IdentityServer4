@@ -4,6 +4,13 @@
     <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <VersionPrefix>23.4</VersionPrefix>
+    <Version>23.4.3</Version>
+    <AssemblyVersion>23.4.3</AssemblyVersion>
+    <Copyright>Three Mammals</Copyright>
+    <Product>Ocelot</Product>
+    <Authors>Tom Pallister, Raman Maksimchuk</Authors>
   </PropertyGroup>
 
   <ItemGroup>

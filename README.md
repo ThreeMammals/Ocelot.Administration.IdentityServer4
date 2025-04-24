@@ -1,2 +1,2 @@
 # Ocelot.Administration.IdentityServer4
-Ocelot Administration feature with IdentityServer4 integration
+[Ocelot](https://www.nuget.org/packages/Ocelot) [Administration](https://ocelot.readthedocs.io/en/latest/features/administration.html) feature with [IdentityServer4](https://www.nuget.org/packages/IdentityServer4) integration
