@@ -20,13 +20,13 @@ namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
 public sealed class AdministrationTests2 : Steps
 {
-    private HttpClient _httpClient;
+    //private HttpClient _httpClient;
     private readonly HttpClient _httpClientTwo;
     //private HttpResponseMessage _response;
     //private IHost _builder;
     //private IHostBuilder _hostBuilder;
-    private int _ocelotPort;
-    private string _ocelotUrl;
+    //private int _ocelotPort;
+    //private string _ocelotUrl;
     //private BearerToken _token;
     private IHostBuilder _webHostBuilderTwo;
     private IHost _builderTwo;
@@ -34,67 +34,80 @@ public sealed class AdministrationTests2 : Steps
     private IHost _fooServiceBuilder;
     private IHost _barServiceBuilder;
 
-    public AdministrationTests2()
+    public AdministrationTests2() : base()
     {
-        _httpClient = new HttpClient();
+        //_httpClient = new HttpClient();
         _httpClientTwo = new HttpClient();
-        _ocelotPort = PortFinder.GetRandomPort();
-        _ocelotUrl = DownstreamUrl(_ocelotPort);
-        _httpClient.BaseAddress = new(_ocelotUrl);
+        //int port = PortFinder.GetRandomPort();
+        //_ocelotUrl = DownstreamUrl(port);
+        ////_httpClient.BaseAddress = new(_ocelotUrl);
+        //_ocelotClient.BaseAddress = new(_ocelotUrl);
     }
 
-    private const string SkipReason = "https://github.com/ThreeMammals/Ocelot/pull/1025/files#diff-bda37725895a95e577429be88c614803fb0ca66fada3daaa204d41bd2ca1dc30";
-
-    [Fact(Skip = SkipReason)]
+    //private const string SkipReason = "https://github.com/ThreeMammals/Ocelot/pull/1025/files#diff-bda37725895a95e577429be88c614803fb0ca66fada3daaa204d41bd2ca1dc30";
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_return_response_401_with_call_re_routes_controller()
     {
+        int port = PortFinder.GetRandomPort();
+        var url = DownstreamUrl(port);
         var configuration = new FileConfiguration();
-        await GivenThereIsAConfiguration(configuration);
-        GivenOcelotIsRunningWithAdministration();
+        GivenThereIsAConfiguration(configuration);
+        GivenOcelotIsRunningWithAdministration(url);
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.Unauthorized);
     }
 
-    // this seems to be be answer https://github.com/IdentityServer/IdentityServer4/issues/4914
-    [Fact(Skip = SkipReason)]
+    // This seems to be be answer https://github.com/IdentityServer/IdentityServer4/issues/4914
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_return_response_200_with_call_re_routes_controller()
     {
+        int port = PortFinder.GetRandomPort();
+        var url = DownstreamUrl(port);
         var configuration = new FileConfiguration();
-        await GivenThereIsAConfiguration(configuration);
-        GivenOcelotIsRunningWithAdministration();
+        GivenThereIsAConfiguration(configuration);
+        //_httpClient.BaseAddress = new(_ocelotUrl);
+        //_ocelotClient.BaseAddress = new(url);
+        GivenOcelotIsRunningWithAdministration(url);
         await GivenIHaveAnOcelotToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
     }
 
-    [Fact(Skip = SkipReason)]
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_return_response_200_with_call_routes_controller_using_base_url_added_in_file_config()
     {
-        _httpClient = new HttpClient();
-        var port = PortFinder.GetRandomPort();
-        _ocelotUrl = DownstreamUrl(port);
-        _httpClient.BaseAddress = new Uri(_ocelotUrl);
-
+        //_httpClient = new HttpClient();
+        //var port = PortFinder.GetRandomPort();
+        //_ocelotUrl = DownstreamUrl(port);
+        //_httpClient.BaseAddress = new Uri(_ocelotUrl);
+        int port = PortFinder.GetRandomPort();
+        var ocUrl = DownstreamUrl(port);
         var configuration = new FileConfiguration
         {
-            GlobalConfiguration = new FileGlobalConfiguration
+            GlobalConfiguration = new()
             {
-                BaseUrl = _ocelotUrl,
+                BaseUrl = ocUrl,
             },
         };
-
-        await GivenThereIsAConfiguration(configuration);
-        GivenOcelotIsRunningWithAdministration(); //await GivenOcelotIsRunningWithNoWebHostBuilder();
+        GivenThereIsAConfiguration(configuration);
+        //await GivenOcelotIsRunningWithNoWebHostBuilder();
+        GivenOcelotIsRunningWithAdministration(ocUrl);
         await GivenIHaveAnOcelotToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
     }
 
-    [Fact(Skip = SkipReason)]
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_return_OK_status_and_multiline_indented_json_response_with_json_options_for_custom_builder()
     {
+        int port = PortFinder.GetRandomPort();
+        var url = DownstreamUrl(port);
         var configuration = new FileConfiguration();
         static IMvcCoreBuilder customBuilder(IMvcCoreBuilder builder, Assembly assembly)
         {
@@ -104,8 +117,8 @@ public sealed class AdministrationTests2 : Steps
                 .AddJsonOptions(options => { options.JsonSerializerOptions.WriteIndented = true; });
         }
 
-        await GivenThereIsAConfiguration(configuration);
-        GivenOcelotUsingBuilderIsRunning(customBuilder);
+        GivenThereIsAConfiguration(configuration);
+        GivenOcelotUsingBuilderIsRunning(url, customBuilder);
         await GivenIHaveAnOcelotToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
@@ -113,31 +126,38 @@ public sealed class AdministrationTests2 : Steps
         await ThenTheResultHaveMultiLineIndentedJson();
     }
 
-#if NET9_0_OR_GREATER
-#pragma warning disable IDE0079 // Remove unnecessary suppression
-#pragma warning disable xUnit1004 // Test methods should not be skipped
-    [Fact(Skip = "Require migration to .NET 9 or removing")]
-#pragma warning restore xUnit1004 // Test methods should not be skipped
-#pragma warning restore IDE0079 // Remove unnecessary suppression
-#else
-    [Fact(Skip = SkipReason)]
-#endif
+//#if NET9_0_OR_GREATER
+//#pragma warning disable IDE0079 // Remove unnecessary suppression
+//#pragma warning disable xUnit1004 // Test methods should not be skipped
+//    [Fact(Skip = "Require migration to .NET 9 or removing")]
+//#pragma warning restore xUnit1004 // Test methods should not be skipped
+//#pragma warning restore IDE0079 // Remove unnecessary suppression
+//#else
+//    [Fact(Skip = SkipReason)]
+//#endif
+    [Fact]
     public async Task Should_be_able_to_use_token_from_ocelot_a_on_ocelot_b()
     {
+        int port = PortFinder.GetRandomPort();
+        var url = DownstreamUrl(port);
         var configuration = new FileConfiguration();
-        var port = PortFinder.GetRandomPort();
-        await GivenThereIsAConfiguration(configuration);
+        GivenThereIsAConfiguration(configuration);
         GivenIdentityServerSigningEnvironmentalVariablesAreSet();
-        GivenOcelotIsRunningWithAdministration();
+        GivenOcelotIsRunningWithAdministration(url);
         await GivenIHaveAnOcelotToken("/administration");
-        await GivenAnotherOcelotIsRunning(DownstreamUrl(port));
+        int port2 = PortFinder.GetRandomPort();
+        var url2 = DownstreamUrl(port2);
+        await GivenAnotherOcelotIsRunning(url2);
         await WhenIGetUrlOnTheSecondOcelot("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
     }
 
-    [Fact(Skip = SkipReason)]
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_return_file_configuration()
     {
+        int port = PortFinder.GetRandomPort();
+        var url = DownstreamUrl(port);
         var configuration = new FileConfiguration
         {
             GlobalConfiguration = new FileGlobalConfiguration
@@ -155,11 +175,7 @@ public sealed class AdministrationTests2 : Steps
                 {
                     DownstreamHostAndPorts = new List<FileHostAndPort>
                     {
-                        new()
-                        {
-                            Host = "localhost",
-                            Port = 80,
-                        },
+                        new("localhost", 80),
                     },
                     DownstreamScheme = "https",
                     DownstreamPathTemplate = "/",
@@ -175,11 +191,7 @@ public sealed class AdministrationTests2 : Steps
                 {
                     DownstreamHostAndPorts = new List<FileHostAndPort>
                     {
-                        new()
-                        {
-                            Host = "localhost",
-                            Port = 80,
-                        },
+                        new("localhost", 80),
                     },
                     DownstreamScheme = "https",
                     DownstreamPathTemplate = "/",
@@ -193,9 +205,8 @@ public sealed class AdministrationTests2 : Steps
                 },
             },
         };
-
-        await GivenThereIsAConfiguration(configuration);
-        GivenOcelotIsRunningWithAdministration();
+        GivenThereIsAConfiguration(configuration);
+        GivenOcelotIsRunningWithAdministration(url);
         await GivenIHaveAnOcelotToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
@@ -203,9 +214,12 @@ public sealed class AdministrationTests2 : Steps
         await ThenTheResponseShouldBe(configuration);
     }
 
-    [Fact(Skip = SkipReason)]
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_get_file_configuration_edit_and_post_updated_version()
     {
+        int port = PortFinder.GetRandomPort();
+        var url = DownstreamUrl(port);
         var initialConfiguration = new FileConfiguration
         {
             GlobalConfiguration = new FileGlobalConfiguration(),
@@ -215,11 +229,7 @@ public sealed class AdministrationTests2 : Steps
                 {
                     DownstreamHostAndPorts = new List<FileHostAndPort>
                     {
-                        new()
-                        {
-                            Host = "localhost",
-                            Port = 80,
-                        },
+                        new("localhost", 80),
                     },
                     DownstreamScheme = "https",
                     DownstreamPathTemplate = "/",
@@ -230,11 +240,7 @@ public sealed class AdministrationTests2 : Steps
                 {
                     DownstreamHostAndPorts = new List<FileHostAndPort>
                     {
-                        new()
-                        {
-                            Host = "localhost",
-                            Port = 80,
-                        },
+                        new("localhost", 80),
                     },
                     DownstreamScheme = "https",
                     DownstreamPathTemplate = "/",
@@ -243,7 +249,6 @@ public sealed class AdministrationTests2 : Steps
                 },
             },
         };
-
         var updatedConfiguration = new FileConfiguration
         {
             GlobalConfiguration = new FileGlobalConfiguration(),
@@ -253,11 +258,7 @@ public sealed class AdministrationTests2 : Steps
                 {
                     DownstreamHostAndPorts = new List<FileHostAndPort>
                     {
-                        new()
-                        {
-                            Host = "localhost",
-                            Port = 80,
-                        },
+                        new("localhost", 80),
                     },
                     DownstreamScheme = "http",
                     DownstreamPathTemplate = "/geoffrey",
@@ -282,8 +283,8 @@ public sealed class AdministrationTests2 : Steps
             },
         };
 
-        await GivenThereIsAConfiguration(initialConfiguration);
-        GivenOcelotIsRunningWithAdministration();
+        GivenThereIsAConfiguration(initialConfiguration);
+        GivenOcelotIsRunningWithAdministration(url);
         await GivenIHaveAnOcelotToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
@@ -295,9 +296,12 @@ public sealed class AdministrationTests2 : Steps
         ThenTheConfigurationIsSavedCorrectly(updatedConfiguration);
     }
 
-    [Fact(Skip = SkipReason)]
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_activate_change_token_when_configuration_is_updated()
     {
+        int port = PortFinder.GetRandomPort();
+        var url = DownstreamUrl(port);
         var configuration = new FileConfiguration
         {
             GlobalConfiguration = new FileGlobalConfiguration(),
@@ -307,7 +311,7 @@ public sealed class AdministrationTests2 : Steps
                 {
                     DownstreamHostAndPorts = new List<FileHostAndPort>
                     {
-                        new("localhost",80),
+                        new("localhost", 80),
                     },
                     DownstreamScheme = "https",
                     DownstreamPathTemplate = "/",
@@ -317,8 +321,8 @@ public sealed class AdministrationTests2 : Steps
             },
         };
 
-        await GivenThereIsAConfiguration(configuration);
-        GivenOcelotIsRunningWithAdministration();
+        GivenThereIsAConfiguration(configuration);
+        GivenOcelotIsRunningWithAdministration(url);
         await GivenIHaveAnOcelotToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIPostOnTheApiGateway("/administration/configuration", configuration);
@@ -349,9 +353,12 @@ public sealed class AdministrationTests2 : Steps
         resultText.ShouldBe(expectedText);
     }
 
-    [Fact(Skip = SkipReason)]
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_get_file_configuration_edit_and_post_updated_version_redirecting_route()
     {
+        int ocPort = PortFinder.GetRandomPort();
+        var ocUrl = DownstreamUrl(ocPort);
         var fooPort = PortFinder.GetRandomPort();
         var barPort = PortFinder.GetRandomPort();
         var initialConfiguration = new FileConfiguration
@@ -390,29 +397,32 @@ public sealed class AdministrationTests2 : Steps
             },
         };
 
-        await GivenThereIsAConfiguration(initialConfiguration);
+        GivenThereIsAConfiguration(initialConfiguration);
         GivenThereIsAFooServiceRunningOn(DownstreamUrl(fooPort));
         GivenThereIsABarServiceRunningOn(DownstreamUrl(barPort));
-        GivenOcelotIsRunningWithAdministration();
+        GivenOcelotIsRunningWithAdministration(ocUrl);
         await WhenIGetUrlOnTheApiGateway("/foo");
-        await ThenTheResponseBodyShouldBe("foo");
+        ThenTheResponseBodyShouldBe("foo");
         await GivenIHaveAnOcelotToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIPostOnTheApiGateway("/administration/configuration", updatedConfiguration);
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
         await ThenTheResponseShouldBe(updatedConfiguration);
         await WhenIGetUrlOnTheApiGateway("/foo");
-        await ThenTheResponseBodyShouldBe("bar");
+        ThenTheResponseBodyShouldBe("bar");
         await WhenIPostOnTheApiGateway("/administration/configuration", initialConfiguration);
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
         await ThenTheResponseShouldBe(initialConfiguration);
         await WhenIGetUrlOnTheApiGateway("/foo");
-        await ThenTheResponseBodyShouldBe("foo");
+        ThenTheResponseBodyShouldBe("foo");
     }
 
-    [Fact(Skip = SkipReason)]
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_clear_region()
     {
+        int ocPort = PortFinder.GetRandomPort();
+        var ocUrl = DownstreamUrl(ocPort);
         var initialConfiguration = new FileConfiguration
         {
             GlobalConfiguration = new FileGlobalConfiguration(),
@@ -452,15 +462,16 @@ public sealed class AdministrationTests2 : Steps
         };
 
         var regionToClear = "gettest";
-        await GivenThereIsAConfiguration(initialConfiguration);
-        GivenOcelotIsRunningWithAdministration();
+        GivenThereIsAConfiguration(initialConfiguration);
+        GivenOcelotIsRunningWithAdministration(ocUrl);
         await GivenIHaveAnOcelotToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIDeleteOnTheApiGateway($"/administration/outputcache/{regionToClear}");
         ThenTheStatusCodeShouldBe(HttpStatusCode.NoContent);
     }
 
-    [Fact(Skip = SkipReason)]
+    //[Fact(Skip = SkipReason)]
+    [Fact]
     public async Task Should_return_response_200_with_call_re_routes_controller_when_using_own_identity_server_to_secure_admin_area()
     {
         var configuration = new FileConfiguration();
@@ -475,17 +486,18 @@ public sealed class AdministrationTests2 : Steps
                 ValidateAudience = false,
             };
         }
-
-        await GivenThereIsAConfiguration(configuration);
+        int ocPort = PortFinder.GetRandomPort();
+        var ocUrl = DownstreamUrl(ocPort);
+        GivenThereIsAConfiguration(configuration);
         await GivenThereIsAnIdentityServerOn(identityServerRootUrl, "api");
-        GivenOcelotIsRunningWithIdentityServerSettings(options);
-        await GivenIHaveAToken(identityServerRootUrl);
+        GivenOcelotIsRunningWithIdentityServerSettings(ocUrl, options);
+        await GivenIHaveIdentityServerToken(identityServerRootUrl);
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
     }
 
-    private async Task GivenIHaveAToken(string url)
+    private async Task GivenIHaveIdentityServerToken(string url)
     {
         var formData = new List<KeyValuePair<string, string>>
         {
@@ -502,7 +514,7 @@ public sealed class AdministrationTests2 : Steps
         var response = await httpClient.PostAsync($"{url}/connect/token", content);
         var responseContent = await response.Content.ReadAsStringAsync();
         response.EnsureSuccessStatusCode();
-        _token = JsonConvert.DeserializeObject<BearerToken>(responseContent);
+        _token = JsonConvert.DeserializeObject<BearerToken>(responseContent) ?? new();
     }
 
     private async Task GivenThereIsAnIdentityServerOn(string url, string apiName)
@@ -521,38 +533,38 @@ public sealed class AdministrationTests2 : Steps
                     .AddInMemoryApiScopes(new List<ApiScope> { new(apiName) })
                     .AddInMemoryApiResources(new List<ApiResource>
                     {
-                    new()
-                    {
-                        Name = apiName,
-                        Description = apiName,
-                        Enabled = true,
-                        DisplayName = apiName,
-                        Scopes = new List<string>
+                        new()
                         {
-                            apiName,
+                            Name = apiName,
+                            Description = apiName,
+                            Enabled = true,
+                            DisplayName = apiName,
+                            Scopes = new List<string>
+                            {
+                                apiName,
+                            },
                         },
-                    },
                     })
                     .AddInMemoryClients(new List<Client>
                     {
-                    new()
-                    {
-                        ClientId = apiName,
-                        AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
-                        ClientSecrets = new List<Secret> { new("secret".Sha256()) },
-                        AllowedScopes = new List<string> { apiName },
-                        AccessTokenType = AccessTokenType.Jwt,
-                        Enabled = true,
-                    },
+                        new()
+                        {
+                            ClientId = apiName,
+                            AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
+                            ClientSecrets = new List<Secret> { new("secret".Sha256()) },
+                            AllowedScopes = new List<string> { apiName },
+                            AccessTokenType = AccessTokenType.Jwt,
+                            Enabled = true,
+                        },
                     })
                     .AddTestUsers(new List<TestUser>
                     {
-                    new()
-                    {
-                        Username = "test",
-                        Password = "test",
-                        SubjectId = "1231231",
-                    },
+                        new()
+                        {
+                            Username = "test",
+                            Password = "test",
+                            SubjectId = "1231231",
+                        },
                     });
                 })
                 .Configure(app =>
@@ -601,7 +613,6 @@ public sealed class AdministrationTests2 : Steps
             });
 
         _builderTwo = _webHostBuilderTwo.Build();
-
         await _builderTwo.StartAsync();
     }
 
@@ -622,15 +633,14 @@ public sealed class AdministrationTests2 : Steps
         var json = JsonConvert.SerializeObject(updatedConfiguration);
         var content = new StringContent(json);
         content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-        _response = await _httpClient.PostAsync(url, content);
+        _response = await _ocelotClient.PostAsync(url, content);
     }
 
-    private async Task ThenTheResponseBodyShouldBe(string expected)
-    {
-        var content = await _response.Content.ReadAsStringAsync();
-        content.ShouldBe(expected);
-    }
-
+    //private async Task ThenTheResponseBodyShouldBe(string expected)
+    //{
+    //    var content = await _response.Content.ReadAsStringAsync();
+    //    content.ShouldBe(expected);
+    //}
     private async Task ThenTheResponseShouldBe(FileConfiguration expecteds)
     {
         var response = JsonConvert.DeserializeObject<FileConfiguration>(await _response.Content.ReadAsStringAsync());
@@ -659,7 +669,8 @@ public sealed class AdministrationTests2 : Steps
 
     private void GivenIHaveAddedATokenToMyRequest()
     {
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token.AccessToken);
+        //_httpClient
+        _ocelotClient.DefaultRequestHeaders.Authorization = new("Bearer", _token.AccessToken);
     }
 
     private async Task GivenIHaveAnOcelotToken(string adminPath)
@@ -674,16 +685,16 @@ public sealed class AdministrationTests2 : Steps
         };
         var content = new FormUrlEncodedContent(formData);
 
-        var response = await _httpClient.PostAsync(tokenUrl, content);
+        var response = await /*_httpClient*/_ocelotClient.PostAsync(tokenUrl, content);
         var responseContent = await response.Content.ReadAsStringAsync();
         response.EnsureSuccessStatusCode();
         _token = JsonConvert.DeserializeObject<BearerToken>(responseContent) ?? new();
         var configPath = $"{adminPath}/.well-known/openid-configuration";
-        response = await _httpClient.GetAsync(configPath);
+        response = await /*_httpClient*/_ocelotClient.GetAsync(configPath);
         response.EnsureSuccessStatusCode();
     }
 
-    private void GivenOcelotIsRunningWithIdentityServerSettings(Action<JwtBearerOptions> configOptions)
+    private void GivenOcelotIsRunningWithIdentityServerSettings(string ocelotUrl, Action<JwtBearerOptions> configOptions)
     {
         //_hostBuilder = TestHostBuilder.Create() //Host.CreateDefaultBuilder()
         //    .UseUrls(_ocelotUrl)
@@ -715,12 +726,12 @@ public sealed class AdministrationTests2 : Steps
             .AddMvc(option => option.EnableEndpointRouting = false)
             .Services.AddOcelot()
             .AddAdministration("/administration", configOptions);
-
-        GivenOcelotIsRunning(WithBasicConfiguration,
+        GivenOcelotIsRunning(
+            WithBasicConfiguration,
             WithAddAdministration,
             WithUseOcelot,
-            (host) => host.UseUrls(_ocelotUrl),
-            (client) => client.BaseAddress = new(_ocelotUrl)); // BaseAddress must be updated in Steps of the main testing project to support parallelism
+            (host) => host.UseUrls(ocelotUrl),
+            (client) => client.BaseAddress = new(ocelotUrl)); // BaseAddress must be updated in Steps of the main testing project to support parallelism
     }
 
     //private void OcelotIsRunningWithServices(Action<IServiceCollection> configureServices)
@@ -747,7 +758,7 @@ public sealed class AdministrationTests2 : Steps
     //    _builder.Start();
     //}
 
-    private void GivenOcelotIsRunningWithAdministration()
+    private void GivenOcelotIsRunningWithAdministration(string ocelotUrl)
         //=> OcelotIsRunningWithServices(s => s
         //    .AddMvc(s => s.EnableEndpointRouting = false)
         //    .Services.AddOcelot()
@@ -758,24 +769,25 @@ public sealed class AdministrationTests2 : Steps
                 .Services.AddOcelot()
                 .AddAdministration("/administration", "secret"),
             WithUseOcelot,
-            (host) => host.UseUrls(_ocelotUrl),
-            (client) => client.BaseAddress = new(_ocelotUrl)); // BaseAddress must be updated in Steps of the main testing project to support parallelism
+            (host) => host.UseUrls(ocelotUrl),
+            (client) => client.BaseAddress = new(ocelotUrl)); // BaseAddress must be updated in Steps of the main testing project to support parallelism
 
     [Obsolete]
-    private void GivenOcelotUsingBuilderIsRunning(Func<IMvcCoreBuilder, Assembly, IMvcCoreBuilder> customBuilder)
+    private void GivenOcelotUsingBuilderIsRunning(string ocelotUrl, Func<IMvcCoreBuilder, Assembly, IMvcCoreBuilder> customBuilder)
         //=> OcelotIsRunningWithServices(s => s
         //    .AddMvc(s => s.EnableEndpointRouting = false)
         //    .Services
         //    .AddOcelotUsingBuilder(customBuilder)
         //    .AddAdministration("/administration", "secret"));
-        => GivenOcelotIsRunning(WithBasicConfiguration,
+        => GivenOcelotIsRunning(
+            WithBasicConfiguration,
             (services) => services
                 .AddMvc(s => s.EnableEndpointRouting = false)
                 .Services.AddOcelotUsingBuilder(customBuilder)
                 .AddAdministration("/administration", "secret"),
             WithUseOcelot,
-            (host) => host.UseUrls(_ocelotUrl),
-            (client) => client.BaseAddress = new(_ocelotUrl)); // BaseAddress must be updated in Steps of the main testing project to support parallelism
+            (host) => host.UseUrls(ocelotUrl),
+            (client) => client.BaseAddress = new(ocelotUrl)); // BaseAddress must be updated in Steps of the main testing project to support parallelism
 
     //private async Task GivenOcelotIsRunningWithNoWebHostBuilder()
     //{
@@ -808,41 +820,33 @@ public sealed class AdministrationTests2 : Steps
     //    await _builder.StartAsync();
     //}
 
-    private static async Task GivenThereIsAConfiguration(FileConfiguration fileConfiguration)
-    {
-        var configurationPath = $"{Directory.GetCurrentDirectory()}/ocelot.json";
+    //private static async Task GivenThereIsAConfiguration(FileConfiguration fileConfiguration)
+    //{
+    //    var configurationPath = $"{Directory.GetCurrentDirectory()}/ocelot.json";
+    //    var jsonConfiguration = JsonConvert.SerializeObject(fileConfiguration);
+    //    if (File.Exists(configurationPath))
+    //    {
+    //        File.Delete(configurationPath);
+    //    }
+    //    await File.WriteAllTextAsync(configurationPath, jsonConfiguration);
+    //    _ = await File.ReadAllTextAsync(configurationPath);
+    //    configurationPath = $"{AppContext.BaseDirectory}/ocelot.json";
+    //    if (File.Exists(configurationPath))
+    //    {
+    //        File.Delete(configurationPath);
+    //    }
+    //    await File.WriteAllTextAsync(configurationPath, jsonConfiguration);
+    //    _ = await File.ReadAllTextAsync(configurationPath);
+    //}
 
-        var jsonConfiguration = JsonConvert.SerializeObject(fileConfiguration);
-
-        if (File.Exists(configurationPath))
-        {
-            File.Delete(configurationPath);
-        }
-
-        await File.WriteAllTextAsync(configurationPath, jsonConfiguration);
-
-        _ = await File.ReadAllTextAsync(configurationPath);
-
-        configurationPath = $"{AppContext.BaseDirectory}/ocelot.json";
-
-        if (File.Exists(configurationPath))
-        {
-            File.Delete(configurationPath);
-        }
-
-        await File.WriteAllTextAsync(configurationPath, jsonConfiguration);
-
-        _ = await File.ReadAllTextAsync(configurationPath);
-    }
-
-    private async Task WhenIGetUrlOnTheApiGateway(string url)
-    {
-        _response = await _httpClient.GetAsync(url);
-    }
+    //private async Task WhenIGetUrlOnTheApiGateway(string url)
+    //{
+    //    _response = await _httpClient.GetAsync(url);
+    //}
 
     private async Task WhenIDeleteOnTheApiGateway(string url)
     {
-        _response = await _httpClient.DeleteAsync(url);
+        _response = await _ocelotClient.DeleteAsync(url);
     }
 
     //private void ThenTheStatusCodeShouldBe(HttpStatusCode expectedHttpStatusCode)
@@ -870,8 +874,12 @@ public sealed class AdministrationTests2 : Steps
         Environment.SetEnvironmentVariable("OCELOT_CERTIFICATE", string.Empty);
         Environment.SetEnvironmentVariable("OCELOT_CERTIFICATE_PASSWORD", string.Empty);
         //_builder?.Dispose();
-        _httpClient?.Dispose();
+        //_builder2?.Dispose();
+        //_httpClient?.Dispose();
+        _httpClientTwo?.Dispose();
         _identityServerBuilder?.Dispose();
+        _fooServiceBuilder?.Dispose();
+        _barServiceBuilder?.Dispose();
         base.Dispose();
     }
 
