@@ -53,15 +53,14 @@ public class Steps : IDisposable
     // TODO Merge both members
     protected IWebHostBuilder _webHostBuilder;
     protected IWebHostBuilder _ocelotBuilder;
-
-    private IWebHost _ocelotHost; // TODO remove because of one reference
+    protected IWebHost _ocelotHost; // TODO remove because of one reference
     private IOcelotConfigurationChangeTokenSource _changeToken;
 
     public Steps() : base()
     {
         _random = new Random();
         _testId = Guid.NewGuid();
-        _ocelotConfigFileName = $"{ConfigurationBuilderExtensions.PrimaryConfigFile}-{_testId:N}";
+        _ocelotConfigFileName = $"{_testId:N}_{ConfigurationBuilderExtensions.PrimaryConfigFile}";
         Files = new() { _ocelotConfigFileName };
         Folders = new();
     }
