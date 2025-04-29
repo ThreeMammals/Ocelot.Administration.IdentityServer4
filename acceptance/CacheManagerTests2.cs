@@ -58,12 +58,15 @@ public sealed class CacheManagerTests2 : Steps
         var regionToClear = "gettest";
         GivenThereIsAConfiguration(configuration);
 
-        GivenOcelotIsRunning(WithBasicConfiguration, WithCacheManager, WithUseOcelot,
+        using var ocelot = await GivenOcelotHostIsRunning
+        (
+            WithBasicConfiguration, WithCacheManager, WithUseOcelot,
             (host) => host.UseUrls(ocelotUrl)
-                    .UseKestrel()
-                    .UseContentRoot(Directory.GetCurrentDirectory())
-                    .Configure(async app => await app.UseOcelot()),
-            (client) => client.BaseAddress = new(ocelotUrl)); // BaseAddress must be updated in Steps of the main testing project to support parallelism
+        );
+        _ocelotClient = new()
+        {
+            BaseAddress = new(ocelotUrl),
+        };
 
         await GivenIHaveAnOcelotToken("/administration");
         GivenIHaveAddedATokenToMyRequest();

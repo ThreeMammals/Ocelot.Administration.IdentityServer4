@@ -99,28 +99,28 @@ public static class OcelotBuilderExtensions
     private static IEnumerable<ApiScope> ApiScopes(IdentityServerConfiguration configuration)
         => configuration.AllowedScopes.Select(s => new ApiScope(s));
 
-    private static List<ApiResource> Resources(IdentityServerConfiguration configuration) => new()
-    {
+    private static List<ApiResource> Resources(IdentityServerConfiguration configuration) =>
+    [
         new(configuration.ApiName, configuration.ApiName)
         {
-            ApiSecrets = new List<Secret>
-            {
+            ApiSecrets =
+            [
                 new()
                 {
                     Value = configuration.ApiSecret.Sha256(),
                 },
-            },
+            ],
         },
-    };
+    ];
 
-    private static List<Client> Client(IdentityServerConfiguration configuration) => new()
-    {
+    private static List<Client> Client(IdentityServerConfiguration configuration) =>
+    [
         new()
         {
             ClientId = configuration.ApiName,
             AllowedGrantTypes = GrantTypes.ClientCredentials,
-            ClientSecrets = new List<Secret> {new(configuration.ApiSecret.Sha256())},
+            ClientSecrets = [new(configuration.ApiSecret.Sha256())],
             AllowedScopes = configuration.AllowedScopes,
         },
-    };
+    ];
 }

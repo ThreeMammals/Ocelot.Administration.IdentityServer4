@@ -551,6 +551,35 @@ public class Steps : IDisposable
         _ocelotClient = _ocelotServer.CreateClient();
     }
 
+    /// <summary>
+    /// TODO Move to Ocelot.Testing project
+    /// </summary>
+    protected async Task<IHost> GivenOcelotHostIsRunning(
+        Action<WebHostBuilderContext, IConfigurationBuilder>? configureDelegate,
+        Action<IServiceCollection>? configureServices,
+        Action<IApplicationBuilder>? configureApp,
+        Action<IWebHostBuilder>? configureHost)
+    {
+        void ConfigureWeb(IWebHostBuilder webBuilder)
+        {
+            webBuilder
+                .UseKestrel()
+                .ConfigureAppConfiguration(configureDelegate ?? WithBasicConfiguration)
+                .ConfigureServices(configureServices ?? WithAddOcelot)
+                .Configure(configureApp ?? WithUseOcelot);
+            configureHost?.Invoke(webBuilder);
+        }
+        var host = TestHostBuilder
+            .CreateHost() // Host.CreateDefaultBuilder()
+            .ConfigureWebHost(ConfigureWeb)
+            .Build();
+        await host.StartAsync();
+        return host;
+    }
+
+    /// <summary>
+    /// TODO Move to Ocelot.Testing project
+    /// </summary>
     protected void GivenOcelotIsRunning(
         Action<WebHostBuilderContext, IConfigurationBuilder>? configureDelegate,
         Action<IServiceCollection>? configureServices,
