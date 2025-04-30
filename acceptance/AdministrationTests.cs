@@ -98,16 +98,17 @@ public sealed class AdministrationTests : Steps
         await ThenTheResultHaveMultiLineIndentedJson();
     }
 
-//#if NET9_0_OR_GREATER
-//#pragma warning disable IDE0079 // Remove unnecessary suppression
-//#pragma warning disable xUnit1004 // Test methods should not be skipped
-//    [Fact(Skip = "Require migration to .NET 9 or removing")]
-//#pragma warning restore xUnit1004 // Test methods should not be skipped
-//#pragma warning restore IDE0079 // Remove unnecessary suppression
-//#else
-//    [Fact(Skip = SkipReason)]
-//#endif
+    // .NET 9 has breaking changes related to JwtSecurityToken.
+    // More info: https://learn.microsoft.com/en-us/dotnet/core/compatibility/aspnet-core/8.0/securitytoken-events
+#if NET9_0_OR_GREATER
+#pragma warning disable IDE0079 // Remove unnecessary suppression
+#pragma warning disable xUnit1004 // Test methods should not be skipped
+    [Fact(Skip = "Require migration to .NET 9 or disabling.")]
+#pragma warning restore xUnit1004 // Test methods should not be skipped
+#pragma warning restore IDE0079 // Remove unnecessary suppression
+#else
     [Fact]
+#endif
     public async Task Should_be_able_to_use_token_from_OcelotA_on_OcelotB()
     {
         int port = PortFinder.GetRandomPort();
@@ -567,10 +568,7 @@ public sealed class AdministrationTests : Steps
                             Description = apiName,
                             Enabled = true,
                             DisplayName = apiName,
-                            Scopes =
-                            [
-                                apiName,
-                            ],
+                            Scopes = [apiName],
                         },
                     ])
                     .AddInMemoryClients(

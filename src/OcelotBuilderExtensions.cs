@@ -45,7 +45,7 @@ public static class OcelotBuilderExtensions
     {
         builder.Services
             .AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
-            .AddJwtBearer("Bearer", configOptions);
+            .AddJwtBearer(IdentityServerAuthenticationDefaults.AuthenticationScheme, configOptions);
     }
 
     private static void AddIdentityServer(IdentityServerConfiguration identityServerConfiguration, AdministrationPath adminPath, IOcelotBuilder builder, IConfiguration configuration)
@@ -65,33 +65,28 @@ public static class OcelotBuilderExtensions
         var baseSchemeUrlAndPort = urlFinder.Find();
         JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
-        builder.Services
-            .AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
-            .AddJwtBearer("Bearer", options =>
+        void ConfigureOptions(JwtBearerOptions options)
+        {
+            options.Authority = baseSchemeUrlAndPort + adminPath.Path;
+            options.RequireHttpsMetadata = identityServerConfiguration.RequireHttps;
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                options.Authority = baseSchemeUrlAndPort + adminPath.Path;
-                options.RequireHttpsMetadata = identityServerConfiguration.RequireHttps;
+                ValidateAudience = false,
+            };
+        }
+        builder.Services
+        .AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
+        .AddJwtBearer(IdentityServerAuthenticationDefaults.AuthenticationScheme, ConfigureOptions);
 
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateAudience = false,
-                };
-            });
-
-        //todo - refactor naming..
+        // TODO - refactor naming..
         if (string.IsNullOrEmpty(identityServerConfiguration.CredentialsSigningCertificateLocation) || string.IsNullOrEmpty(identityServerConfiguration.CredentialsSigningCertificatePassword))
         {
             identityServerBuilder.AddDeveloperSigningCredential();
         }
         else
         {
-            //todo - refactor so calls method?
-#pragma warning disable IDE0079 // Remove unnecessary suppression
-#pragma warning disable SYSLIB0057 // Type or member is obsolete
-            // TODO: Refactor the code to phase out IdentityServer4 in favor of its successor or replace with ASP.NET Identity framework
+            // TODO - refactor so calls method?
             var cert = new X509Certificate2(identityServerConfiguration.CredentialsSigningCertificateLocation, identityServerConfiguration.CredentialsSigningCertificatePassword, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
-#pragma warning restore SYSLIB0057 // Type or member is obsolete
-#pragma warning restore IDE0079 // Remove unnecessary suppression
             identityServerBuilder.AddSigningCredential(cert);
         }
     }
@@ -119,7 +114,9 @@ public static class OcelotBuilderExtensions
         {
             ClientId = configuration.ApiName,
             AllowedGrantTypes = GrantTypes.ClientCredentials,
-            ClientSecrets = [new(configuration.ApiSecret.Sha256())],
+            ClientSecrets = [
+                new(configuration.ApiSecret.Sha256())
+            ],
             AllowedScopes = configuration.AllowedScopes,
         },
     ];
