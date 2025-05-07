@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
-public class AuthenticationSteps : Steps, IDisposable
+public class AuthenticationSteps : Steps
 {
     private readonly ServiceHandler _serviceHandler;
 
@@ -24,40 +24,41 @@ public class AuthenticationSteps : Steps, IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public static ApiResource CreateApiResource(
-        string apiName,
-        IEnumerable<string> extraScopes = null) => new()
+    public static ApiResource CreateApiResource(string apiName, IEnumerable<string>? extraScopes = null)
+        => new()
         {
             Name = apiName,
             Description = $"My {apiName} API",
             Enabled = true,
             DisplayName = "test",
-            Scopes = new List<string>(extraScopes ?? Enumerable.Empty<string>())
-        {
-            apiName,
-            $"{apiName}.readOnly",
-        },
-            ApiSecrets = new List<Secret>
-        {
-            new ("secret".Sha256()),
-        },
-            UserClaims = new List<string>
-        {
-            "CustomerId", "LocationId",
-        },
+            Scopes =
+            [
+                .. extraScopes ?? [],
+                apiName,
+                $"{apiName}.readOnly",
+            ],
+            ApiSecrets =
+            [
+                new ("secret".Sha256()),
+            ],
+            UserClaims =
+            [
+                "CustomerId",
+                "LocationId",
+            ],
         };
 
     protected static Client CreateClientWithSecret(string clientId, Secret secret, AccessTokenType tokenType = AccessTokenType.Jwt, string[] apiScopes = null)
     {
         var client = DefaultClient(tokenType, apiScopes);
         client.ClientId = clientId ?? "client";
-        client.ClientSecrets = new Secret[] { secret };
+        client.ClientSecrets = [secret];
         return client;
     }
 
     protected static Client DefaultClient(AccessTokenType tokenType = AccessTokenType.Jwt, string[] apiScopes = null)
     {
-        apiScopes ??= new string[] { "api" };
+        apiScopes ??= ["api"];
         return new()
         {
             ClientId = "client",
@@ -65,7 +66,7 @@ public class AuthenticationSteps : Steps, IDisposable
             ClientSecrets = new List<Secret> { new("secret".Sha256()) },
             AllowedScopes = apiScopes
                 .Union(apiScopes.Select(x => $"{x}.readOnly"))
-                .Union(new string[] { "openid", "offline_access" })
+                .Union(["openid", "offline_access"])
                 .ToList(),
             AccessTokenType = tokenType,
             Enabled = true,
@@ -76,8 +77,8 @@ public class AuthenticationSteps : Steps, IDisposable
 
     public static IWebHostBuilder CreateIdentityServer(string url, AccessTokenType tokenType, string[] apiScopes, Client[] clients)
     {
-        apiScopes ??= new string[] { "api" };
-        clients ??= new Client[] { DefaultClient(tokenType, apiScopes) };
+        apiScopes ??= ["api"];
+        clients ??= [DefaultClient(tokenType, apiScopes)];
         var builder = TestHostBuilder.Create()
             .UseUrls(url)
             .UseKestrel()
@@ -93,22 +94,22 @@ public class AuthenticationSteps : Steps, IDisposable
                         .Select(apiname => new ApiScope(apiname, apiname.ToUpper())))
                     .AddInMemoryApiResources(apiScopes
                         .Select(x => new { i = Array.IndexOf(apiScopes, x), scope = x })
-                        .Select(x => CreateApiResource(x.scope, new string[] { "openid", "offline_access" })))
+                        .Select(x => CreateApiResource(x.scope, ["openid", "offline_access"])))
                     .AddInMemoryClients(clients)
-                    .AddTestUsers(new()
-                    {
+                    .AddTestUsers(
+                    [
                         new()
                         {
                             Username = "test",
                             Password = "test",
                             SubjectId = "registered|1231231",
-                            Claims = new List<Claim>
-                            {
-                                   new("CustomerId", "123"),
-                                   new("LocationId", "321"),
-                            },
+                            Claims =
+                            [
+                                new("CustomerId", "123"),
+                                new("LocationId", "321"),
+                            ],
                         },
-                    });
+                    ]);
             })
             .Configure(app =>
             {
@@ -138,19 +139,19 @@ public class AuthenticationSteps : Steps, IDisposable
         return GivenIHaveATokenWithForm(url, form);
     }
 
-    public static FileRoute GivenDefaultAuthRoute(int port, string upstreamHttpMethod = null, string authProviderKey = null) => new()
+    public static FileRoute GivenDefaultAuthRoute(int port, string? upstreamHttpMethod = null, string? authProviderKey = null) => new()
     {
         DownstreamPathTemplate = "/",
-        DownstreamHostAndPorts = new()
-        {
+        DownstreamHostAndPorts =
+        [
             new("localhost", port),
-        },
+        ],
         DownstreamScheme = Uri.UriSchemeHttp,
         UpstreamPathTemplate = "/",
-        UpstreamHttpMethod = new() { upstreamHttpMethod ?? HttpMethods.Get },
+        UpstreamHttpMethod = [upstreamHttpMethod ?? HttpMethods.Get],
         AuthenticationOptions = new()
         {
-            AuthenticationProviderKeys = new string[] { authProviderKey ?? "Test" },
+            AuthenticationProviderKeys = [authProviderKey ?? "Test"],
         },
     };
 

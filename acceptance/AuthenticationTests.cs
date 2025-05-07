@@ -7,17 +7,17 @@ namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
 public sealed class AuthenticationTests : AuthenticationSteps, IDisposable
 {
-    private IWebHost _identityServerBuilder;
-    private readonly string _identityServerRootUrl;
+    private IWebHost _identityServer;
+    private readonly string _identityServerUrl;
     private readonly Action<IdentityServerAuthenticationOptions> _options;
 
     public AuthenticationTests()
     {
         var identityServerPort = PortFinder.GetRandomPort();
-        _identityServerRootUrl = $"http://localhost:{identityServerPort}";
+        _identityServerUrl = $"http://localhost:{identityServerPort}";
         _options = o =>
         {
-            o.Authority = _identityServerRootUrl;
+            o.Authority = _identityServerUrl;
             o.ApiName = "api";
             o.RequireHttpsMetadata = false;
             o.SupportedTokens = SupportedTokens.Both;
@@ -31,7 +31,7 @@ public sealed class AuthenticationTests : AuthenticationSteps, IDisposable
         var port = PortFinder.GetRandomPort();
         var route = GivenDefaultAuthRoute(port, HttpMethods.Post);
         var configuration = GivenConfiguration(route);
-        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerRootUrl, AccessTokenType.Jwt))
+        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerUrl, AccessTokenType.Jwt))
            .And(x => x.GivenThereIsAServiceRunningOn(DownstreamServiceUrl(port), HttpStatusCode.Created, string.Empty))
            .And(x => GivenThereIsAConfiguration(configuration))
            .And(x => GivenOcelotIsRunning(_options, "Test"))
@@ -47,9 +47,9 @@ public sealed class AuthenticationTests : AuthenticationSteps, IDisposable
         var port = PortFinder.GetRandomPort();
         var route = GivenDefaultAuthRoute(port);
         var configuration = GivenConfiguration(route);
-        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerRootUrl, AccessTokenType.Jwt))
+        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerUrl, AccessTokenType.Jwt))
             .And(x => x.GivenThereIsAServiceRunningOn(DownstreamServiceUrl(port), HttpStatusCode.OK, "Hello from Laura"))
-            .And(x => GivenIHaveAToken(_identityServerRootUrl))
+            .And(x => GivenIHaveAToken(_identityServerUrl))
             .And(x => GivenThereIsAConfiguration(configuration))
             .And(x => GivenOcelotIsRunning(_options, "Test"))
             .And(x => GivenIHaveAddedATokenToMyRequest())
@@ -65,9 +65,9 @@ public sealed class AuthenticationTests : AuthenticationSteps, IDisposable
         var port = PortFinder.GetRandomPort();
         var route = GivenDefaultAuthRoute(port);
         var configuration = GivenConfiguration(route);
-        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerRootUrl, AccessTokenType.Jwt))
+        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerUrl, AccessTokenType.Jwt))
             .And(x => x.GivenThereIsAServiceRunningOn(DownstreamServiceUrl(port), HttpStatusCode.OK, "Hello from Laura"))
-            .And(x => GivenAuthToken(_identityServerRootUrl, "api2"))
+            .And(x => GivenAuthToken(_identityServerUrl, "api2"))
             .And(x => GivenThereIsAConfiguration(configuration))
             .And(x => GivenOcelotIsRunning(_options, "Test"))
             .And(x => GivenIHaveAddedATokenToMyRequest())
@@ -82,9 +82,9 @@ public sealed class AuthenticationTests : AuthenticationSteps, IDisposable
         var port = PortFinder.GetRandomPort();
         var route = GivenDefaultAuthRoute(port, HttpMethods.Post);
         var configuration = GivenConfiguration(route);
-        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerRootUrl, AccessTokenType.Jwt))
+        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerUrl, AccessTokenType.Jwt))
             .And(x => x.GivenThereIsAServiceRunningOn(DownstreamServiceUrl(port), HttpStatusCode.Created, string.Empty))
-            .And(x => GivenIHaveAToken(_identityServerRootUrl))
+            .And(x => GivenIHaveAToken(_identityServerUrl))
             .And(x => GivenThereIsAConfiguration(configuration))
             .And(x => GivenOcelotIsRunning(_options, "Test"))
             .And(x => GivenIHaveAddedATokenToMyRequest())
@@ -100,9 +100,9 @@ public sealed class AuthenticationTests : AuthenticationSteps, IDisposable
         var port = PortFinder.GetRandomPort();
         var route = GivenDefaultAuthRoute(port, HttpMethods.Post);
         var configuration = GivenConfiguration(route);
-        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerRootUrl, AccessTokenType.Reference))
+        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerUrl, AccessTokenType.Reference))
             .And(x => x.GivenThereIsAServiceRunningOn(DownstreamServiceUrl(port), HttpStatusCode.Created, string.Empty))
-            .And(x => GivenIHaveAToken(_identityServerRootUrl))
+            .And(x => GivenIHaveAToken(_identityServerUrl))
             .And(x => GivenThereIsAConfiguration(configuration))
             .And(x => GivenOcelotIsRunning(_options, "Test"))
             .And(x => GivenIHaveAddedATokenToMyRequest())
@@ -116,15 +116,15 @@ public sealed class AuthenticationTests : AuthenticationSteps, IDisposable
     public async Task GivenThereIsAnIdentityServerOn(string url, AccessTokenType tokenType)
     {
         var scopes = new string[] { "api", "api2" };
-        _identityServerBuilder = CreateIdentityServer(url, tokenType, scopes, null)
+        _identityServer = CreateIdentityServer(url, tokenType, scopes, null)
             .Build();
-        await _identityServerBuilder.StartAsync();
+        await _identityServer.StartAsync();
         await VerifyIdentityServerStarted(url);
     }
 
     public override void Dispose()
     {
-        _identityServerBuilder?.Dispose();
+        _identityServer?.Dispose();
         base.Dispose();
     }
 }

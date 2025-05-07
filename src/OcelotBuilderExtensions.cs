@@ -34,14 +34,14 @@ public static class OcelotBuilderExtensions
 
         if (configureOptions != null)
         {
-            AddIdentityServer(configureOptions, builder);
+            AddIdentityServer(builder, configureOptions);
         }
 
         builder.Services.AddSingleton<IAdministrationPath>(administrationPath);
         return new OcelotAdministrationBuilder(builder.Services, builder.Configuration);
     }
 
-    private static void AddIdentityServer(Action<JwtBearerOptions> configOptions, IOcelotBuilder builder)
+    private static void AddIdentityServer(IOcelotBuilder builder, Action<JwtBearerOptions> configOptions)
     {
         builder.Services
             .AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
@@ -74,12 +74,11 @@ public static class OcelotBuilderExtensions
                 ValidateAudience = false,
             };
         }
-        builder.Services
-        .AddAuthentication(IdentityServerAuthenticationDefaults.AuthenticationScheme)
-        .AddJwtBearer(IdentityServerAuthenticationDefaults.AuthenticationScheme, ConfigureOptions);
+        AddIdentityServer(builder, ConfigureOptions);
 
         // TODO - refactor naming..
-        if (string.IsNullOrEmpty(identityServerConfiguration.CredentialsSigningCertificateLocation) || string.IsNullOrEmpty(identityServerConfiguration.CredentialsSigningCertificatePassword))
+        if (string.IsNullOrEmpty(identityServerConfiguration.CredentialsSigningCertificateLocation) ||
+            string.IsNullOrEmpty(identityServerConfiguration.CredentialsSigningCertificatePassword))
         {
             identityServerBuilder.AddDeveloperSigningCredential();
         }
