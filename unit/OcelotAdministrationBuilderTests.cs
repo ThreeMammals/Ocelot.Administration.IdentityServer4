@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Ocelot.DependencyInjection;
+using Ocelot.Testing;
 using System.Reflection;
 
 namespace Ocelot.Administration.IdentityServer4.UnitTests;
