@@ -22,22 +22,15 @@ public sealed class AuthorizationTests : IdentityServerSteps
         var port = PortFinder.GetRandomPort();
         var configuration = new FileConfiguration
         {
-            Routes = new List<FileRoute>
-            {
+            Routes =
+            [
                 new()
                 {
                     DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = new List<FileHostAndPort>
-                    {
-                        new()
-                        {
-                            Host = "localhost",
-                            Port = port,
-                        },
-                    },
+                    DownstreamHostAndPorts = [ Localhost(port) ],
                     DownstreamScheme = "http",
                     UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = new List<string> { "Get" },
+                    UpstreamHttpMethod = ["Get"],
                     AuthenticationOptions = new FileAuthenticationOptions
                     {
                         AuthenticationProviderKeys =["Test"],
@@ -60,7 +53,7 @@ public sealed class AuthorizationTests : IdentityServerSteps
                         {"UserType", "registered"},
                     },
                 },
-            },
+            ],
         };
 
         await GivenThereIsAnIdentityServerRunning("api", AccessTokenType.Jwt);
@@ -80,25 +73,18 @@ public sealed class AuthorizationTests : IdentityServerSteps
         var port = PortFinder.GetRandomPort();
         var configuration = new FileConfiguration
         {
-            Routes = new List<FileRoute>
-            {
+            Routes =
+            [
                 new()
                 {
                     DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = new List<FileHostAndPort>
-                    {
-                        new()
-                        {
-                            Host = "localhost",
-                            Port = port,
-                        },
-                    },
+                    DownstreamHostAndPorts = [ Localhost(port) ],
                     DownstreamScheme = "http",
                     UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = new List<string> { "Get" },
+                    UpstreamHttpMethod = ["Get"],
                     AuthenticationOptions = new FileAuthenticationOptions
                     {
-                        AuthenticationProviderKeys =["Test"],
+                        AuthenticationProviderKeys = ["Test"],
                     },
                     AddHeadersToRequest =
                     {
@@ -117,7 +103,7 @@ public sealed class AuthorizationTests : IdentityServerSteps
                         {"UserType", "registered"},
                     },
                 },
-            },
+            ],
         };
 
         await GivenThereIsAnIdentityServerRunning("api", AccessTokenType.Jwt);
@@ -136,25 +122,22 @@ public sealed class AuthorizationTests : IdentityServerSteps
         var port = PortFinder.GetRandomPort();
         var configuration = new FileConfiguration
         {
-            Routes = new List<FileRoute>
-            {
+            Routes =
+            [
                 new()
                 {
                     DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = new List<FileHostAndPort>
-                    {
-                        new("localhost", port),
-                    },
+                    DownstreamHostAndPorts = [ Localhost(port) ],
                     DownstreamScheme = "http",
                     UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = new List<string> { "Get" },
-                    AuthenticationOptions = new FileAuthenticationOptions
+                    UpstreamHttpMethod = ["Get"],
+                    AuthenticationOptions = new()
                     {
-                        AuthenticationProviderKeys =["Test"],
-                        AllowedScopes = new List<string>{ "api", "api.readOnly", "openid", "offline_access" },
+                        AuthenticationProviderKeys = ["Test"],
+                        AllowedScopes = ["api", "api.readOnly", "openid", "offline_access"],
                     },
                 },
-            },
+            ],
         };
 
         await GivenThereIsAnIdentityServerRunning("api", AccessTokenType.Jwt);

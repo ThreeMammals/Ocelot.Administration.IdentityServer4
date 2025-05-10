@@ -22,8 +22,7 @@ namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 public sealed class AdministrationTests : IdentityServerSteps
 {
     public AdministrationTests() : base()
-    {
-    }
+    { }
 
     [Fact]
     public async Task Should_return_response_401_with_call_re_routes_controller()
@@ -107,7 +106,7 @@ public sealed class AdministrationTests : IdentityServerSteps
 #if NET9_0_OR_GREATER
 #pragma warning disable IDE0079 // Remove unnecessary suppression
 #pragma warning disable xUnit1004 // Test methods should not be skipped
-        [Fact(Skip = "Require migration to .NET 9 or disabling.")]
+    [Fact(Skip = "Require migration to .NET 9 or disabling.")]
 #pragma warning restore xUnit1004 // Test methods should not be skipped
 #pragma warning restore IDE0079 // Remove unnecessary suppression
 #else
@@ -651,8 +650,8 @@ public sealed class AdministrationTests : IdentityServerSteps
 
     private static void GivenIdentityServerSigningEnvironmentalVariablesAreSet()
     {
-        Environment.SetEnvironmentVariable("OCELOT_CERTIFICATE", "mycert.pfx");
-        Environment.SetEnvironmentVariable("OCELOT_CERTIFICATE_PASSWORD", "password");
+        Environment.SetEnvironmentVariable(IdentityServerConfigurationCreator.OCELOT_CERTIFICATE, "mycert.pfx");
+        Environment.SetEnvironmentVariable(IdentityServerConfigurationCreator.OCELOT_CERTIFICATE_PASSWORD, "password");
     }
 
     private async Task WhenIGetUrlOnTheSecondOcelot(HttpClient client, string url)
@@ -768,7 +767,6 @@ public sealed class AdministrationTests : IdentityServerSteps
         return host;
     }
 
-    [Obsolete]
     private async Task<IHost> GivenOcelotUsingBuilderIsRunning(string ocelotUrl, Func<IMvcCoreBuilder, Assembly, IMvcCoreBuilder> customBuilder)
     {
         var host = await GivenOcelotHostIsRunning
@@ -776,7 +774,7 @@ public sealed class AdministrationTests : IdentityServerSteps
             WithAdministrationConfiguration,
             (services) => services
                 .AddMvc(s => s.EnableEndpointRouting = false)
-                .Services.AddOcelotUsingBuilder(customBuilder)
+                .Services.AddOcelotUsingBuilder(services.BuildServiceProvider().GetService<IConfiguration>(), customBuilder)
                 .AddAdministration("/administration", "secret"),
             WithUseOcelot,
             (host) => host.UseUrls(ocelotUrl)
@@ -811,8 +809,8 @@ public sealed class AdministrationTests : IdentityServerSteps
 
     public override void Dispose()
     {
-        Environment.SetEnvironmentVariable("OCELOT_CERTIFICATE", string.Empty);
-        Environment.SetEnvironmentVariable("OCELOT_CERTIFICATE_PASSWORD", string.Empty);
+        Environment.SetEnvironmentVariable(IdentityServerConfigurationCreator.OCELOT_CERTIFICATE, string.Empty);
+        Environment.SetEnvironmentVariable(IdentityServerConfigurationCreator.OCELOT_CERTIFICATE_PASSWORD, string.Empty);
         base.Dispose();
     }
 

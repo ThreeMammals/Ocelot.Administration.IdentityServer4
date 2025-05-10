@@ -14,7 +14,7 @@ public class OcelotAdministrationBuilderTests : UnitTest
 
     public OcelotAdministrationBuilderTests()
     {
-        _configRoot = new ConfigurationRoot(new List<IConfigurationProvider>());
+        _configRoot = new ConfigurationRoot([]);
         _services = new ServiceCollection();
         _services.AddSingleton(GetHostingEnvironment());
         _services.AddSingleton(_configRoot);

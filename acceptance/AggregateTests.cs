@@ -137,7 +137,7 @@ public sealed class AggregateTests : IdentityServerSteps
         _downstreamPaths[1].ShouldBe(expectedDownstreamPath);
     }
 
-    private static FileRoute GivenRoute(int port, string upstream, string key, string downstream = null) => new()
+    private static FileRoute GivenRoute(int port, string upstream, string key, string? downstream = null) => new()
     {
         DownstreamPathTemplate = downstream ?? "/",
         DownstreamScheme = Uri.UriSchemeHttp,

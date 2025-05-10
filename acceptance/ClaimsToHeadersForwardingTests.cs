@@ -43,7 +43,7 @@ public sealed class ClaimsToHeadersForwardingTests : IdentityServerSteps
                     UpstreamHttpMethod = [HttpMethods.Get],
                     AuthenticationOptions = new()
                     {
-                        AuthenticationProviderKey = "Test",
+                        AuthenticationProviderKeys = ["Test"],
                         AllowedScopes = ["openid", "offline_access", "api"],
                     },
                     AddHeadersToRequest =

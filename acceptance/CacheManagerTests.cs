@@ -15,6 +15,10 @@ public sealed class CacheManagerTests : IdentityServerSteps
     {
     }
 
+    /// <summary>
+    /// TODO Unstable test because of System.AggregateException:
+    /// One or more errors occurred. (The process cannot access the file '..\Ocelot.Administration.IdentityServer4\acceptance\bin\Debug\net9.0\ocelot.Production.json' because it is being used by another process.)
+    /// </summary>
     [Fact]
     public async Task ShouldClearRegionViaAdministrationAPI()
     {
@@ -97,8 +101,8 @@ public sealed class CacheManagerTests : IdentityServerSteps
 
     public override void Dispose()
     {
-        Environment.SetEnvironmentVariable("OCELOT_CERTIFICATE", string.Empty);
-        Environment.SetEnvironmentVariable("OCELOT_CERTIFICATE_PASSWORD", string.Empty);
+        Environment.SetEnvironmentVariable(IdentityServerConfigurationCreator.OCELOT_CERTIFICATE, string.Empty);
+        Environment.SetEnvironmentVariable(IdentityServerConfigurationCreator.OCELOT_CERTIFICATE_PASSWORD, string.Empty);
         base.Dispose();
     }
 }

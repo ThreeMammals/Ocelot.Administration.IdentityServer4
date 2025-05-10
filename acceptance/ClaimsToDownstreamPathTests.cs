@@ -30,8 +30,8 @@ public sealed class ClaimsToDownstreamPathTests : IdentityServerSteps
         var port = PortFinder.GetRandomPort();
         var configuration = new FileConfiguration
         {
-            Routes = new()
-            {
+            Routes =
+            [
                 new()
                 {
                     DownstreamPathTemplate = "/users/{userId}",
@@ -41,7 +41,7 @@ public sealed class ClaimsToDownstreamPathTests : IdentityServerSteps
                     UpstreamHttpMethod = [HttpMethods.Get],
                     AuthenticationOptions = new()
                     {
-                        AuthenticationProviderKey = "Test",
+                        AuthenticationProviderKeys = ["Test"],
                         AllowedScopes = ["openid", "offline_access", "api"],
                     },
                     ChangeDownstreamPathTemplate =
@@ -49,7 +49,7 @@ public sealed class ClaimsToDownstreamPathTests : IdentityServerSteps
                         {"userId", "Claims[sub] > value[1] > |"},
                     },
                 },
-            },
+            ],
         };
         await GivenThereIsAnIdentityServer("api", AccessTokenType.Jwt, [user]);
         GivenThereIsAServiceRunningOn(port, HttpStatusCode.OK);

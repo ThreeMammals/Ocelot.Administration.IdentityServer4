@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Net.Http.Headers;
 using Ocelot.DependencyInjection;
 using System.Net.Http.Headers;
+using Microsoft.Extensions.Primitives;
 
 namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
@@ -19,9 +20,9 @@ public sealed class MultipleAuthSchemesFeatureTests : IdentityServerSteps
 
     public MultipleAuthSchemesFeatureTests() : base()
     {
-        _identityServers = Array.Empty<IWebHost>();
-        _identityServerUrls = Array.Empty<string>();
-        _tokens = Array.Empty<BearerToken>();
+        _identityServers = [];
+        _identityServerUrls = [];
+        _tokens = [];
     }
 
     public override void Dispose()
@@ -103,7 +104,7 @@ public sealed class MultipleAuthSchemesFeatureTests : IdentityServerSteps
         {
             var token = _tokens[i];
             var header = AuthHeaderName(schemes[i]);
-            var hvalue = new AuthenticationHeaderValue(token.TokenType, token.AccessToken);
+            var hvalue = new AuthenticationHeaderValue(token?.TokenType ?? "Bearer", token?.AccessToken);
             GivenIAddAHeader(header, hvalue.ToString());
         }
     }
@@ -139,10 +140,10 @@ public sealed class MultipleAuthSchemesFeatureTests : IdentityServerSteps
                     {
                         var headers = context.Request.Headers;
                         var name = AuthHeaderName(scheme);
-                        if (headers.ContainsKey(name))
+                        if (headers.TryGetValue(name, out StringValues value))
                         {
                             // Redirect to default authentication handler which is (JwtAuthHandler) aka (Bearer)
-                            headers[HeaderNames.Authorization] = headers[name];
+                            headers[HeaderNames.Authorization] = value;
                             return scheme;
                         }
 

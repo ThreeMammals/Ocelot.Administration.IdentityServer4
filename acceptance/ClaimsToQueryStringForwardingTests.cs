@@ -28,34 +28,27 @@ public sealed class ClaimsToQueryStringForwardingTests : IdentityServerSteps
             Username = "test",
             Password = "test",
             SubjectId = "registered|1231231",
-            Claims = new List<Claim>
-            {
+            Claims = [
                 new("CustomerId", "123"),
                 new("LocationId", "1"),
-            },
+            ],
         };
         var port = PortFinder.GetRandomPort();
         var configuration = new FileConfiguration
         {
-            Routes = new List<FileRoute>
-            {
+            Routes =
+            [
                 new()
                 {
                     DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = new List<FileHostAndPort>
-                    {
-                        new("localhost", port),
-                    },
+                    DownstreamHostAndPorts = [ Localhost(port) ],
                     DownstreamScheme = "http",
                     UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = new List<string> { "Get" },
-                    AuthenticationOptions = new FileAuthenticationOptions
+                    UpstreamHttpMethod = ["Get"],
+                    AuthenticationOptions = new()
                     {
-                        AuthenticationProviderKey = "Test",
-                        AllowedScopes = new List<string>
-                        {
-                            "openid", "offline_access", "api",
-                        },
+                        AuthenticationProviderKeys = ["Test"],
+                        AllowedScopes = ["openid", "offline_access", "api"],
                     },
                     AddQueriesToRequest =
                     {
@@ -65,7 +58,7 @@ public sealed class ClaimsToQueryStringForwardingTests : IdentityServerSteps
                         {"UserId", "Claims[sub] > value[1] > |"},
                     },
                 },
-            },
+            ],
         };
 
         await GivenThereIsAnIdentityServer("api", AccessTokenType.Jwt, [user]);
@@ -87,34 +80,28 @@ public sealed class ClaimsToQueryStringForwardingTests : IdentityServerSteps
             Username = "test",
             Password = "test",
             SubjectId = "registered|1231231",
-            Claims = new List<Claim>
-            {
+            Claims =
+            [
                 new("CustomerId", "123"),
                 new("LocationId", "1"),
-            },
+            ],
         };
         var port = PortFinder.GetRandomPort();
         var configuration = new FileConfiguration
         {
-            Routes = new List<FileRoute>
-            {
+            Routes =
+            [
                 new()
                 {
                     DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = new List<FileHostAndPort>
-                    {
-                        new("localhost", port),
-                    },
+                    DownstreamHostAndPorts = [ Localhost(port) ],
                     DownstreamScheme = "http",
                     UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = new List<string> { "Get" },
-                    AuthenticationOptions = new FileAuthenticationOptions
+                    UpstreamHttpMethod = ["Get"],
+                    AuthenticationOptions = new()
                     {
-                        AuthenticationProviderKey = "Test",
-                        AllowedScopes = new List<string>
-                        {
-                            "openid", "offline_access", "api",
-                        },
+                        AuthenticationProviderKeys = ["Test"],
+                        AllowedScopes = ["openid", "offline_access", "api"],
                     },
                     AddQueriesToRequest =
                     {
@@ -124,7 +111,7 @@ public sealed class ClaimsToQueryStringForwardingTests : IdentityServerSteps
                         {"UserId", "Claims[sub] > value[1] > |"},
                     },
                 },
-            },
+            ],
         };
 
         await GivenThereIsAnIdentityServer("api", AccessTokenType.Jwt, [user]);

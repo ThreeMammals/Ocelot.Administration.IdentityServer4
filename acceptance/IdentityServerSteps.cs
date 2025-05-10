@@ -64,7 +64,7 @@ public class IdentityServerSteps : AcceptanceSteps
             ],
         };
 
-    protected static Client CreateClientWithSecret(string clientId, Secret secret, AccessTokenType tokenType = AccessTokenType.Jwt, ApiScope[] scopes = null)
+    protected static Client CreateClientWithSecret(string clientId, Secret secret, AccessTokenType tokenType = AccessTokenType.Jwt, ApiScope[]? scopes = null)
     {
         var client = DefaultClient(tokenType, scopes);
         client.ClientId = clientId ?? "client";
@@ -72,19 +72,19 @@ public class IdentityServerSteps : AcceptanceSteps
         return client;
     }
 
-    protected static Client DefaultClient(AccessTokenType tokenType = AccessTokenType.Jwt, ApiScope[] apiScopes = null)
+    protected static Client DefaultClient(AccessTokenType tokenType = AccessTokenType.Jwt, ApiScope[]? apiScopes = null)
     {
         apiScopes ??= [ new("api") ];
         return new()
         {
             ClientId = "client",
             AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
-            ClientSecrets = new List<Secret> { new("secret".Sha256()) },
-            AllowedScopes = apiScopes
+            ClientSecrets = [ new("secret".Sha256()) ],
+            AllowedScopes = [.. apiScopes
                 .Select(s => s.Name)
                 .Union(apiScopes.Select(x => $"{x.Name}.readOnly"))
                 .Union(["openid", "offline_access"])
-                .ToList(),
+            ],
             AccessTokenType = tokenType,
             Enabled = true,
             RequireClientSecret = false,
