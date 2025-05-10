@@ -14,8 +14,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ocelot" Version="24.0.0" />
+    <!--<PackageReference Include="Ocelot" Version="24.0.0" />-->
     <PackageReference Include="IdentityServer4" Version="4.1.2" />
     <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="3.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Ocelot\src\Ocelot\Ocelot.csproj" />
   </ItemGroup>
 </Project>

@@ -10,66 +10,41 @@ using System.Security.Claims;
 
 namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
-public sealed class ClaimsToHeadersForwardingTests : IDisposable
+public sealed class ClaimsToHeadersForwardingTests : IdentityServerSteps
 {
-    private IWebHost _identityServerBuilder;
-    private readonly Steps _steps;
-    private readonly Action<IdentityServerAuthenticationOptions> _options;
-    private readonly string _identityServerRootUrl;
-    private readonly ServiceHandler _serviceHandler;
-
     public ClaimsToHeadersForwardingTests()
     {
-        _serviceHandler = new ServiceHandler();
-        _steps = new Steps();
-        var identityServerPort = PortFinder.GetRandomPort();
-        _identityServerRootUrl = $"http://localhost:{identityServerPort}";
-        _options = o =>
-        {
-            o.Authority = _identityServerRootUrl;
-            o.ApiName = "api";
-            o.RequireHttpsMetadata = false;
-            o.SupportedTokens = SupportedTokens.Both;
-            o.ApiSecret = "secret";
-        };
     }
 
     [Fact]
-    public void Should_return_response_200_and_foward_claim_as_header()
+    public async Task Should_return_response_200_and_foward_claim_as_header()
     {
         var user = new TestUser
         {
             Username = "test",
             Password = "test",
             SubjectId = "registered|1231231",
-            Claims = new List<Claim>
-            {
+            Claims = [
                 new("CustomerId", "123"),
                 new("LocationId", "1"),
-            },
+            ],
         };
         var port = PortFinder.GetRandomPort();
         var configuration = new FileConfiguration
         {
-            Routes = new List<FileRoute>
-            {
+            Routes =
+            [
                 new()
                 {
                     DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = new()
-                    {
-                        new("localhost", port),
-                    },
+                    DownstreamHostAndPorts = [ Localhost(port) ],
                     DownstreamScheme = "http",
                     UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = new() { "Get" },
-                    AuthenticationOptions = new FileAuthenticationOptions
+                    UpstreamHttpMethod = [HttpMethods.Get],
+                    AuthenticationOptions = new()
                     {
                         AuthenticationProviderKey = "Test",
-                        AllowedScopes = new()
-                        {
-                            "openid", "offline_access", "api",
-                        },
+                        AllowedScopes = ["openid", "offline_access", "api"],
                     },
                     AddHeadersToRequest =
                     {
@@ -79,36 +54,34 @@ public sealed class ClaimsToHeadersForwardingTests : IDisposable
                         {"UserId", "Claims[sub] > value[1] > |"},
                     },
                 },
-            },
+            ],
         };
-
-        this.Given(x => x.GivenThereIsAnIdentityServerOn(_identityServerRootUrl, "api", AccessTokenType.Jwt, user))
-            .And(x => x.GivenThereIsAServiceRunningOn($"http://localhost:{port}", 200))
-            .And(x => _steps.GivenIHaveAToken(_identityServerRootUrl))
-            .And(x => _steps.GivenThereIsAConfiguration(configuration))
-            .And(x => _steps.GivenOcelotIsRunning(_options, "Test"))
-            .And(x => _steps.GivenIHaveAddedATokenToMyRequest())
-            .When(x => _steps.WhenIGetUrlOnTheApiGateway("/"))
-            .Then(x => _steps.ThenTheStatusCodeShouldBe(HttpStatusCode.OK))
-            .And(x => _steps.ThenTheResponseBodyShouldBe("CustomerId: 123 LocationId: 1 UserType: registered UserId: 1231231"))
-            .BDDfy();
+        await GivenThereIsAnIdentityServer("api", AccessTokenType.Jwt, [user]);
+        GivenThereIsAServiceRunningOn(port, HttpStatusCode.OK);
+        await GivenIHaveAToken();
+        GivenThereIsAConfiguration(configuration);
+        GivenOcelotIsRunningWithIdentityServerAuthentication("Test");
+        GivenIHaveAddedATokenToMyRequest();
+        await WhenIGetUrlOnTheApiGateway("/");
+        ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
+        ThenTheResponseBodyShouldBe("CustomerId: 123 LocationId: 1 UserType: registered UserId: 1231231");
     }
 
-    private void GivenThereIsAServiceRunningOn(string url, int statusCode)
+    private void GivenThereIsAServiceRunningOn(int port, HttpStatusCode statusCode)
     {
-        _serviceHandler.GivenThereIsAServiceRunningOn(url, async context =>
+        var url = DownstreamUrl(port);
+        handler.GivenThereIsAServiceRunningOn(url, async context =>
         {
             var customerId = context.Request.Headers.First(x => x.Key == "CustomerId").Value.First();
             var locationId = context.Request.Headers.First(x => x.Key == "LocationId").Value.First();
             var userType = context.Request.Headers.First(x => x.Key == "UserType").Value.First();
             var userId = context.Request.Headers.First(x => x.Key == "UserId").Value.First();
-
             var responseBody = $"CustomerId: {customerId} LocationId: {locationId} UserType: {userType} UserId: {userId}";
-            context.Response.StatusCode = statusCode;
+            context.Response.StatusCode = (int)statusCode;
             await context.Response.WriteAsync(responseBody);
         });
     }
-
+    /*
     private async Task GivenThereIsAnIdentityServerOn(string url, string apiName, AccessTokenType tokenType, TestUser user)
     {
         _identityServerBuilder = TestHostBuilder.Create()
@@ -181,13 +154,6 @@ public sealed class ClaimsToHeadersForwardingTests : IDisposable
             .Build();
 
         await _identityServerBuilder.StartAsync();
-        await Steps.VerifyIdentityServerStarted(url);
-    }
-
-    public void Dispose()
-    {
-        _serviceHandler?.Dispose();
-        _steps.Dispose();
-        _identityServerBuilder?.Dispose();
-    }
+        await VerifyIdentityServerStarted(url);
+    }*/
 }

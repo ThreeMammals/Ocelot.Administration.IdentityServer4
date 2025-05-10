@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Ocelot\test\Ocelot.Testing\Ocelot.Testing.csproj" />
     <ProjectReference Include="..\src\Ocelot.Administration.IdentityServer4.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -25,7 +26,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="TestStack.BDDfy" Version="4.3.2" />
     <PackageReference Include="CacheManager.Serialization.Json" Version="2.0.0" />
     <PackageReference Include="Ocelot.Cache.CacheManager" Version="24.0.0" />
   </ItemGroup>
@@ -42,11 +42,10 @@
     <Using Include="Xunit" />
     <Using Include="Moq" />
     <Using Include="Shouldly" />
-    <Using Include="TestStack.BDDfy" />
     <Using Include="System.Net" />
     <Using Include="Ocelot.Administration.IdentityServer4" />
+    <Using Include="Ocelot.Testing" />
   </ItemGroup>
-
   <ItemGroup>
     <None Update="mycert.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

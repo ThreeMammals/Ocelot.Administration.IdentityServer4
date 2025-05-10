@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Ocelot\test\Ocelot.Testing\Ocelot.Testing.csproj" />
     <ProjectReference Include="..\src\Ocelot.Administration.IdentityServer4.csproj" />
   </ItemGroup>
 

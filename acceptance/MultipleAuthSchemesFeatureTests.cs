@@ -11,7 +11,7 @@ namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
 [Trait("PR", "1870")]
 [Trait("Issue", "740 1580")]
-public sealed class MultipleAuthSchemesFeatureTests : AuthenticationSteps, IDisposable
+public sealed class MultipleAuthSchemesFeatureTests : IdentityServerSteps
 {
     private IWebHost[] _identityServers;
     private string[] _identityServerUrls;
@@ -30,7 +30,6 @@ public sealed class MultipleAuthSchemesFeatureTests : AuthenticationSteps, IDisp
         {
             server.Dispose();
         }
-
         base.Dispose();
     }
 
@@ -46,7 +45,7 @@ public sealed class MultipleAuthSchemesFeatureTests : AuthenticationSteps, IDisp
     [InlineData("Test1", "Test2")] // with multiple schemes
     [InlineData(IdentityServerAuthenticationDefaults.AuthenticationScheme, "Test")] // with default scheme
     [InlineData("Test", IdentityServerAuthenticationDefaults.AuthenticationScheme)] // with default scheme
-    public void Should_authenticate_using_identity_server_with_multiple_schemes(string scheme1, string scheme2)
+    public async Task Should_authenticate_using_identity_server_with_multiple_schemes(string scheme1, string scheme2)
     {
         var port = PortFinder.GetRandomPort();
         var route = GivenDefaultAuthRoute(port, authProviderKey: string.Empty);
@@ -55,39 +54,38 @@ public sealed class MultipleAuthSchemesFeatureTests : AuthenticationSteps, IDisp
         var configuration = GivenConfiguration(route);
         var responseBody = nameof(Should_authenticate_using_identity_server_with_multiple_schemes);
 
-        this.Given(x => GivenThereIsAServiceRunningOn(port, HttpStatusCode.OK, responseBody))
-            .And(x => Setup(authSchemes.Length)
-                .GivenIdentityServerWithScopes(0, "invalid", "unknown")
-                .GivenIdentityServerWithScopes(1, "api1", "api2"))
-            .And(x => GivenIHaveTokenWithScope(0, "invalid")) // authentication should fail because of invalid scope
-            .And(x => GivenIHaveTokenWithScope(1, "api2")) // authentication should succeed
-
-            .And(x => GivenThereIsAConfiguration(configuration))
-            .And(x => GivenOcelotIsRunningWithIdentityServerAuthSchemes("api2", authSchemes))
-            .And(x => GivenIHaveAddedAllAuthHeaders(authSchemes))
-            .When(x => WhenIGetUrlOnTheApiGateway("/"))
-            .Then(x => ThenTheStatusCodeShouldBe(HttpStatusCode.OK))
-            .And(x => ThenTheResponseBodyShouldBe(responseBody))
-            .BDDfy();
+        GivenThereIsAServiceRunningOn(port, HttpStatusCode.OK, responseBody);
+        Setup(authSchemes.Length)
+            .GivenIdentityServerWithScopes(0, "invalid", "unknown")
+            .GivenIdentityServerWithScopes(1, "api1", "api2");
+        await GivenIHaveTokenWithScope(0, "invalid"); // authentication should fail because of invalid scope
+        await GivenIHaveTokenWithScope(1, "api2"); // authentication should succeed
+        GivenThereIsAConfiguration(configuration);
+        GivenOcelotIsRunningWithIdentityServerAuthSchemes("api2", authSchemes);
+        GivenIHaveAddedAllAuthHeaders(authSchemes);
+        await WhenIGetUrlOnTheApiGateway("/");
+        ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
+        ThenTheResponseBodyShouldBe(responseBody);
     }
 
     private MultipleAuthSchemesFeatureTests GivenIdentityServerWithScopes(int index, params string[] scopes)
     {
         var tokenType = AccessTokenType.Jwt;
-        string url = _identityServerUrls[index] = $"http://localhost:{PortFinder.GetRandomPort()}";
-        var clients = new Client[] { DefaultClient(tokenType, scopes) };
-        var builder = CreateIdentityServer(url, tokenType, scopes, clients);
+        var url = _identityServerUrls[index] = DownstreamUrl(PortFinder.GetRandomPort());
+        var apiScopes = scopes.Select(s => new ApiScope(s)).ToArray();
+        var clients = new Client[] { DefaultClient(tokenType, apiScopes) };
+        var builder = CreateIdentityServer(url, tokenType, apiScopes, clients);
 
         var server = _identityServers[index] = builder.Build();
         server.Start();
-        VerifyIdentityServerStarted(url).GetAwaiter().GetResult();
+        VerifyIdentityServerStarted(url).Wait();
         return this;
     }
 
     private async Task GivenIHaveTokenWithScope(int index, string scope)
     {
         string url = _identityServerUrls[index];
-        _tokens[index] = await GivenAuthToken(url, scope);
+        _tokens[index] = await GivenIHaveAToken(url, new ApiScope(scope));
     }
 
     private async Task GivenIHaveExpiredTokenWithScope(string url, string scope, int index)
@@ -99,7 +97,7 @@ public sealed class MultipleAuthSchemesFeatureTests : AuthenticationSteps, IDisp
     {
         // Assume default scheme token is attached as "Authorization" header, for example "Bearer"
         // But default authentication setup should be ignored in multiple schemes scenario
-        _ocelotClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "failed");
+        ocelotClient.ShouldNotBeNull().DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "failed");
 
         for (int i = 0; i < schemes.Length && i < _tokens.Length; i++)
         {
@@ -115,7 +113,7 @@ public sealed class MultipleAuthSchemesFeatureTests : AuthenticationSteps, IDisp
     private void GivenOcelotIsRunningWithIdentityServerAuthSchemes(string validScope, params string[] schemes)
     {
         const string DefaultScheme = IdentityServerAuthenticationDefaults.AuthenticationScheme;
-        GivenOcelotIsRunningWithServices(services =>
+        void WithIdentityServerAuthSchemes(IServiceCollection services)
         {
             services.AddOcelot();
             var auth = services
@@ -154,6 +152,7 @@ public sealed class MultipleAuthSchemesFeatureTests : AuthenticationSteps, IDisp
                     };
                 });
             }
-        });
+        }
+        GivenOcelotIsRunning(WithIdentityServerAuthSchemes);
     }
 }

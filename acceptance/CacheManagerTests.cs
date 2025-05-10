@@ -5,10 +5,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Ocelot.Cache.CacheManager;
 using Ocelot.Configuration.File;
 using Ocelot.DependencyInjection;
+using System.Security.Policy;
 
 namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
-public sealed class CacheManagerTests : Steps
+public sealed class CacheManagerTests : IdentityServerSteps
 {
     public CacheManagerTests() : base()
     {
@@ -37,15 +38,14 @@ public sealed class CacheManagerTests : Steps
             WithBasicConfiguration, WithCacheManager, WithUseOcelot,
             (host) => host.UseUrls(ocelotUrl)
         );
-        _ocelotClient = new()
+        ocelotClient = new()
         {
             BaseAddress = new(ocelotUrl),
         };
-
         await GivenIHaveAnOcelotToken("/administration"); // TODO Move to AuthSteps
         GivenIHaveAddedATokenToMyRequest();
 
-        _response = await _ocelotClient.DeleteAsync($"/administration/outputcache/{nameof(ShouldClearRegionViaAdministrationAPI)}");
+        await WhenIDeleteUrlOnTheApiGateway($"/administration/outputcache/{nameof(ShouldClearRegionViaAdministrationAPI)}");
 
         ThenTheStatusCodeShouldBe(HttpStatusCode.NoContent);
     }
@@ -77,9 +77,10 @@ public sealed class CacheManagerTests : Steps
             new("scope", "admin"),
             new("grant_type", "client_credentials"),
         };
-        await GivenIHaveATokenWithForm(adminPath, formData, _ocelotClient); // TODO Steps but move to AuthSteps
-        var response = await _ocelotClient.GetAsync($"{adminPath}/.well-known/openid-configuration");
-        response.EnsureSuccessStatusCode();
+        await GivenIHaveATokenWithForm(adminPath, formData, ocelotClient); // TODO Steps but move to AuthSteps
+        //var response = await _ocelotClient.GetAsync($"{adminPath}/.well-known/openid-configuration");
+        //response.EnsureSuccessStatusCode();
+        await VerifyIdentityServerStarted(adminPath, ocelotClient);
     }
 
     private static void WithCacheManager(IServiceCollection services)
