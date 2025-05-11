@@ -1,6 +1,5 @@
 using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Extensions;
-using IdentityServer4.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -77,7 +76,6 @@ public sealed class AggregateTests : IdentityServerSteps
             };
             await app.UseOcelot(configuration);
         }
-        //await GivenThereIsAnIdentityServerOn(identityServerUrl, AccessTokenType.Jwt);
         await GivenThereIsAnIdentityServerOn(identityServerUrl, Api_Name);
         GivenServiceIsRunning(0, port1, "/", 200, "{Hello from Laura}");
         GivenServiceIsRunning(1, port2, "/", 200, "{Hello from Tom}");

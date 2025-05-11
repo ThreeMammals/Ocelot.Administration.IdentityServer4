@@ -1,4 +1,3 @@
-using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Http;
 

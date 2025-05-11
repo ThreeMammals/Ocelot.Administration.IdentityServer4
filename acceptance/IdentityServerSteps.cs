@@ -268,16 +268,12 @@ public class IdentityServerSteps : AcceptanceSteps
         },
     };
 
-    protected void GivenThereIsAServiceRunningOn(int port, HttpStatusCode statusCode, string responseBody)
-        => GivenThereIsAServiceRunningOn(DownstreamUrl(port), statusCode, responseBody);
-    protected void GivenThereIsAServiceRunningOn(string url, HttpStatusCode statusCode, string responseBody)
-    {
-        handler.GivenThereIsAServiceRunningOn(url, async context =>
+    protected void GivenThereIsAServiceRunningOn(int port, HttpStatusCode statusCode, string responseBody) =>
+        handler.GivenThereIsAServiceRunningOn(port, async context =>
         {
             context.Response.StatusCode = (int)statusCode;
             await context.Response.WriteAsync(responseBody);
         });
-    }
 
     private void WithOptions(IdentityServerAuthenticationOptions o)
     {

@@ -1,12 +1,8 @@
-using IdentityServer4.AccessTokenValidation;
 using IdentityServer4.Models;
 using IdentityServer4.Test;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Ocelot.Configuration.File;
-using System.Security.Claims;
 
 namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
@@ -20,42 +16,25 @@ public sealed class AuthorizationTests : IdentityServerSteps
     public async Task Should_return_response_200_authorizing_route()
     {
         var port = PortFinder.GetRandomPort();
-        var configuration = new FileConfiguration
+        var route = GivenAuthRoute(port);
+        route.AddHeadersToRequest = new()
         {
-            Routes =
-            [
-                new()
-                {
-                    DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = [ Localhost(port) ],
-                    DownstreamScheme = "http",
-                    UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = ["Get"],
-                    AuthenticationOptions = new FileAuthenticationOptions
-                    {
-                        AuthenticationProviderKeys =["Test"],
-                    },
-                    AddHeadersToRequest =
-                    {
-                        {"CustomerId", "Claims[CustomerId] > value"},
-                        {"LocationId", "Claims[LocationId] > value"},
-                        {"UserType", "Claims[sub] > value[0] > |"},
-                        {"UserId", "Claims[sub] > value[1] > |"},
-                    },
-                    AddClaimsToRequest =
-                    {
-                        {"CustomerId", "Claims[CustomerId] > value"},
-                        {"UserType", "Claims[sub] > value[0] > |"},
-                        {"UserId", "Claims[sub] > value[1] > |"},
-                    },
-                    RouteClaimsRequirement =
-                    {
-                        {"UserType", "registered"},
-                    },
-                },
-            ],
+            { "CustomerId", "Claims[CustomerId] > value" },
+            { "LocationId", "Claims[LocationId] > value" },
+            { "UserType", "Claims[sub] > value[0] > |" },
+            { "UserId", "Claims[sub] > value[1] > |" },
         };
-
+        route.AddClaimsToRequest = new()
+        {
+            { "CustomerId", "Claims[CustomerId] > value" },
+            { "UserType", "Claims[sub] > value[0] > |" },
+            { "UserId", "Claims[sub] > value[1] > |" },
+        };
+        route.RouteClaimsRequirement = new()
+        {
+            { "UserType", "registered" },
+        };
+        var configuration = GivenConfiguration(route);
         await GivenThereIsAnIdentityServerRunning("api", AccessTokenType.Jwt);
         GivenThereIsAServiceRunningOn(port, HttpStatusCode.OK, "Hello from Laura");
         await GivenIHaveAToken();
@@ -71,41 +50,24 @@ public sealed class AuthorizationTests : IdentityServerSteps
     public async Task Should_return_response_403_authorizing_route()
     {
         var port = PortFinder.GetRandomPort();
-        var configuration = new FileConfiguration
+        var route = GivenAuthRoute(port);
+        route.AddHeadersToRequest = new()
         {
-            Routes =
-            [
-                new()
-                {
-                    DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = [ Localhost(port) ],
-                    DownstreamScheme = "http",
-                    UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = ["Get"],
-                    AuthenticationOptions = new FileAuthenticationOptions
-                    {
-                        AuthenticationProviderKeys = ["Test"],
-                    },
-                    AddHeadersToRequest =
-                    {
-                        {"CustomerId", "Claims[CustomerId] > value"},
-                        {"LocationId", "Claims[LocationId] > value"},
-                        {"UserType", "Claims[sub] > value[0] > |"},
-                        {"UserId", "Claims[sub] > value[1] > |"},
-                    },
-                    AddClaimsToRequest =
-                    {
-                        {"CustomerId", "Claims[CustomerId] > value"},
-                        {"UserId", "Claims[sub] > value[1] > |"},
-                    },
-                    RouteClaimsRequirement =
-                    {
-                        {"UserType", "registered"},
-                    },
-                },
-            ],
+            { "CustomerId", "Claims[CustomerId] > value" },
+            { "LocationId", "Claims[LocationId] > value" },
+            { "UserType", "Claims[sub] > value[0] > |" },
+            { "UserId", "Claims[sub] > value[1] > |" },
         };
-
+        route.AddClaimsToRequest = new()
+        {
+            { "CustomerId", "Claims[CustomerId] > value" },
+            { "UserId", "Claims[sub] > value[1] > |" },
+        };
+        route.RouteClaimsRequirement = new()
+        {
+            { "UserType", "registered" },
+        };
+        var configuration = GivenConfiguration(route);
         await GivenThereIsAnIdentityServerRunning("api", AccessTokenType.Jwt);
         GivenThereIsAServiceRunningOn(port, HttpStatusCode.OK, "Hello from Laura");
         await GivenIHaveAToken();
@@ -120,26 +82,9 @@ public sealed class AuthorizationTests : IdentityServerSteps
     public async Task Should_return_response_200_using_identity_server_with_allowed_scope()
     {
         var port = PortFinder.GetRandomPort();
-        var configuration = new FileConfiguration
-        {
-            Routes =
-            [
-                new()
-                {
-                    DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = [ Localhost(port) ],
-                    DownstreamScheme = "http",
-                    UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = ["Get"],
-                    AuthenticationOptions = new()
-                    {
-                        AuthenticationProviderKeys = ["Test"],
-                        AllowedScopes = ["api", "api.readOnly", "openid", "offline_access"],
-                    },
-                },
-            ],
-        };
-
+        var route = GivenAuthRoute(port);
+        route.AuthenticationOptions.AllowedScopes = ["api", "api.readOnly", "openid", "offline_access"];
+        var configuration = GivenConfiguration(route);
         await GivenThereIsAnIdentityServerRunning("api", AccessTokenType.Jwt);
         GivenThereIsAServiceRunningOn(port, HttpStatusCode.OK, "Hello from Laura");
         await GivenIHaveAToken(new ApiScope("api.readOnly"));
@@ -154,26 +99,9 @@ public sealed class AuthorizationTests : IdentityServerSteps
     public async Task Should_return_response_403_using_identity_server_with_scope_not_allowed()
     {
         var port = PortFinder.GetRandomPort();
-        var configuration = new FileConfiguration
-        {
-            Routes =
-            [
-                new()
-                {
-                    DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = [ Localhost(port) ],
-                    DownstreamScheme = "http",
-                    UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = ["Get"],
-                    AuthenticationOptions = new()
-                    {
-                        AuthenticationProviderKeys = ["Test"],
-                        AllowedScopes = ["api", "openid", "offline_access"],
-                    },
-                },
-            ],
-        };
-
+        var route = GivenAuthRoute(port);
+        route.AuthenticationOptions.AllowedScopes = ["api", "openid", "offline_access"];
+        var configuration = GivenConfiguration(route);
         await GivenThereIsAnIdentityServerRunning("api", AccessTokenType.Jwt);
         GivenThereIsAServiceRunningOn(port, HttpStatusCode.OK, "Hello from Laura");
         await GivenIHaveAToken(new ApiScope("api.readOnly"));
@@ -189,27 +117,12 @@ public sealed class AuthorizationTests : IdentityServerSteps
     public async Task Should_fix_issue_240()
     {
         var port = PortFinder.GetRandomPort();
-        var configuration = new FileConfiguration
+        var route = GivenAuthRoute(port);
+        route.RouteClaimsRequirement = new()
         {
-            Routes = [
-                new()
-                {
-                    DownstreamPathTemplate = "/",
-                    DownstreamHostAndPorts = [ Localhost(port) ],
-                    DownstreamScheme = Uri.UriSchemeHttp,
-                    UpstreamPathTemplate = "/",
-                    UpstreamHttpMethod = [ HttpMethods.Get ],
-                    AuthenticationOptions = new()
-                    {
-                        AuthenticationProviderKeys = ["Test"],
-                    },
-                    RouteClaimsRequirement =
-                    {
-                        {"Role", "User"},
-                    },
-                },
-            ],
+            { "Role", "User"},
         };
+        var configuration = GivenConfiguration(route);
         var users = new List<TestUser>
         {
             new()
@@ -233,6 +146,19 @@ public sealed class AuthorizationTests : IdentityServerSteps
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
         ThenTheResponseBodyShouldBe("Hello from Laura");
     }
+
+    private static FileRoute GivenAuthRoute(int port) => new()
+    {
+        DownstreamPathTemplate = "/",
+        DownstreamHostAndPorts = [ Localhost(port) ],
+        DownstreamScheme = Uri.UriSchemeHttp,
+        UpstreamPathTemplate = "/",
+        UpstreamHttpMethod = [HttpMethods.Get],
+        AuthenticationOptions = new()
+        {
+            AuthenticationProviderKeys = ["Test"],
+        },
+    };
 
     private Task GivenThereIsAnIdentityServerRunning(string apiName, AccessTokenType tokenType)
     {
