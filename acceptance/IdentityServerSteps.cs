@@ -255,6 +255,19 @@ public class IdentityServerSteps : AcceptanceSteps
         issuedBy.ShouldBeTrue();
     }
 
+    protected Task GivenIHaveAdministrationToken(string adminPath)
+    {
+        var formData = new List<KeyValuePair<string, string>>
+        {
+            new("client_id", "admin"),
+            new("client_secret", "secret"),
+            new("scope", "admin"),
+            new("grant_type", "client_credentials"),
+        };
+        return GivenIHaveATokenWithForm(adminPath, formData, ocelotClient)
+            .ContinueWith(t => VerifyIdentityServerStarted(adminPath, ocelotClient));
+    }
+
     public static FileRoute GivenDefaultAuthRoute(int port, string? upstreamHttpMethod = null, string? authProviderKey = null) => new()
     {
         DownstreamPathTemplate = "/",

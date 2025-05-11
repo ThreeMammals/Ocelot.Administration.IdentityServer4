@@ -5,7 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Ocelot.Cache.CacheManager;
 using Ocelot.Configuration.File;
 using Ocelot.DependencyInjection;
-using System.Security.Policy;
 
 namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
@@ -46,11 +45,10 @@ public sealed class CacheManagerTests : IdentityServerSteps
         {
             BaseAddress = new(ocelotUrl),
         };
-        await GivenIHaveAnOcelotToken("/administration"); // TODO Move to AuthSteps
+        await GivenIHaveAdministrationToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
 
         await WhenIDeleteUrlOnTheApiGateway($"/administration/outputcache/{nameof(ShouldClearRegionViaAdministrationAPI)}");
-
         ThenTheStatusCodeShouldBe(HttpStatusCode.NoContent);
     }
 
@@ -71,21 +69,6 @@ public sealed class CacheManagerTests : IdentityServerSteps
         UpstreamPathTemplate = upstream ?? "/",
         FileCacheOptions = options ?? DefaultFileCacheOptions,
     };
-
-    private async Task GivenIHaveAnOcelotToken(string adminPath)
-    {
-        var formData = new List<KeyValuePair<string, string>>
-        {
-            new("client_id", "admin"),
-            new("client_secret", "secret"),
-            new("scope", "admin"),
-            new("grant_type", "client_credentials"),
-        };
-        await GivenIHaveATokenWithForm(adminPath, formData, ocelotClient); // TODO Steps but move to AuthSteps
-        //var response = await _ocelotClient.GetAsync($"{adminPath}/.well-known/openid-configuration");
-        //response.EnsureSuccessStatusCode();
-        await VerifyIdentityServerStarted(adminPath, ocelotClient);
-    }
 
     private static void WithCacheManager(IServiceCollection services)
     {

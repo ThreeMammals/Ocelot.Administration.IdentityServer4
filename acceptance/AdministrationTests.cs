@@ -46,7 +46,7 @@ public sealed class AdministrationTests : IdentityServerSteps
         GivenThereIsAConfiguration(configuration);
 
         using var ocelot = await GivenOcelotIsRunningWithNoWebHostBuilder(ocelotBaseUrl); // TestHostBuilder.CreateHost() -> Host.CreateDefaultBuilder()
-        await GivenIHaveAnOcelotToken("/administration");
+        await GivenIHaveAdministrationToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
@@ -67,7 +67,7 @@ public sealed class AdministrationTests : IdentityServerSteps
         GivenThereIsAConfiguration(configuration);
 
         using var ocelot = await GivenOcelotIsRunningWithNoWebHostBuilder(url);
-        await GivenIHaveAnOcelotToken("/administration");
+        await GivenIHaveAdministrationToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
@@ -87,7 +87,7 @@ public sealed class AdministrationTests : IdentityServerSteps
             .AddAuthorization()
             .AddJsonOptions(options => { options.JsonSerializerOptions.WriteIndented = true; });
         using var ocelot = await GivenOcelotUsingBuilderIsRunning(url, CustomBuilder);
-        await GivenIHaveAnOcelotToken("/administration");
+        await GivenIHaveAdministrationToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
@@ -114,7 +114,7 @@ public sealed class AdministrationTests : IdentityServerSteps
         GivenIdentityServerSigningEnvironmentalVariablesAreSet();
 
         using var ocelot = await GivenOcelotIsRunningWithAdministration(url);
-        await GivenIHaveAnOcelotToken("/administration");
+        await GivenIHaveAdministrationToken("/administration");
         int port2 = PortFinder.GetRandomPort();
         var url2 = DownstreamUrl(port2);
         var configuration2 = GivenConfiguration(url2); // !!! BaseUrl
@@ -155,7 +155,7 @@ public sealed class AdministrationTests : IdentityServerSteps
         GivenThereIsAConfiguration(configuration);
 
         using var ocelot = await GivenOcelotIsRunningWithAdministration(ocUrl);
-        await GivenIHaveAnOcelotToken("/administration");
+        await GivenIHaveAdministrationToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
@@ -179,7 +179,7 @@ public sealed class AdministrationTests : IdentityServerSteps
         GivenThereIsAConfiguration(initialConfiguration);
 
         using var ocelot = await GivenOcelotIsRunningWithAdministration(ocUrl);
-        await GivenIHaveAnOcelotToken("/administration");
+        await GivenIHaveAdministrationToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         await WhenIPostOnTheApiGateway("/administration/configuration", updatedConfiguration);
@@ -207,7 +207,7 @@ public sealed class AdministrationTests : IdentityServerSteps
         GivenThereIsAConfiguration(configuration);
 
         using var ocelot = await GivenOcelotIsRunningWithAdministration(ocUrl);
-        await GivenIHaveAnOcelotToken("/administration");
+        await GivenIHaveAdministrationToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIPostOnTheApiGateway("/administration/configuration", configuration);
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
@@ -262,7 +262,7 @@ public sealed class AdministrationTests : IdentityServerSteps
         using var ocelot = await GivenOcelotIsRunningWithAdministration(ocUrl);
         await WhenIGetUrlOnTheApiGateway("/foo");
         ThenTheResponseBodyShouldBe("/foo");
-        await GivenIHaveAnOcelotToken("/administration");
+        await GivenIHaveAdministrationToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIPostOnTheApiGateway("/administration/configuration", updatedConfiguration);
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
@@ -291,7 +291,7 @@ public sealed class AdministrationTests : IdentityServerSteps
         GivenThereIsAConfiguration(configuration);
 
         using var ocelot = await GivenOcelotIsRunningWithAdministration(ocUrl);
-        await GivenIHaveAnOcelotToken("/administration");
+        await GivenIHaveAdministrationToken("/administration");
         GivenIHaveAddedATokenToMyRequest();
         await WhenIDeleteUrlOnTheApiGateway($"/administration/outputcache/{RegionToClear}");
         ThenTheStatusCodeShouldBe(HttpStatusCode.NoContent);
@@ -410,20 +410,6 @@ public sealed class AdministrationTests : IdentityServerSteps
             actual.Routes[i].UpstreamPathTemplate.ShouldBe(expecteds.Routes[i].UpstreamPathTemplate);
             actual.Routes[i].UpstreamHttpMethod.ShouldBe(expecteds.Routes[i].UpstreamHttpMethod);
         }
-    }
-
-    private async Task<BearerToken> GivenIHaveAnOcelotToken(string adminPath)
-    {
-        var formData = new List<KeyValuePair<string, string>>
-        {
-            new("client_id", "admin"),
-            new("client_secret", "secret"),
-            new("scope", "admin"),
-            new("grant_type", "client_credentials"),
-        };
-        var t = await GivenIHaveATokenWithForm(adminPath, formData, ocelotClient);
-        await VerifyIdentityServerStarted(adminPath, ocelotClient);
-        return t;
     }
 
     private async Task<IHost> GivenOcelotIsRunningWithIdentityServerSettings(string ocelotUrl, Action<JwtBearerOptions> configOptions)
