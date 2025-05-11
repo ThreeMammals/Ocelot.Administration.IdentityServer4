@@ -3,15 +3,19 @@ using IdentityServer4.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 using Ocelot.DependencyInjection;
 using System.Net.Http.Headers;
-using Microsoft.Extensions.Primitives;
 
 namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
-[Trait("PR", "1870")]
-[Trait("Issue", "740 1580")]
+/// <summary>
+/// Oc-Feat: <see href="https://github.com/ThreeMammals/Ocelot/issues/740">#740</see> <see href="https://github.com/ThreeMammals/Ocelot/issues/1580">#1580</see>
+/// <para>Oc-PR: <see href="https://github.com/ThreeMammals/Ocelot/pull/1870">#1870</see></para>
+/// </summary>
+[Trait("OcPull", "1870")]
+[Trait("OcFeat", "740 1580")]
 public sealed class MultipleAuthSchemesFeatureTests : IdentityServerSteps
 {
     private IWebHost[] _identityServers;
