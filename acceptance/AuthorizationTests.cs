@@ -1,6 +1,5 @@
 using IdentityServer4.Models;
 using IdentityServer4.Test;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Ocelot.Configuration.File;
 
@@ -147,18 +146,12 @@ public sealed class AuthorizationTests : IdentityServerSteps
         ThenTheResponseBodyShouldBe("Hello from Laura");
     }
 
-    private static FileRoute GivenAuthRoute(int port) => new()
+    private static FileRoute GivenAuthRoute(int port)
     {
-        DownstreamPathTemplate = "/",
-        DownstreamHostAndPorts = [ Localhost(port) ],
-        DownstreamScheme = Uri.UriSchemeHttp,
-        UpstreamPathTemplate = "/",
-        UpstreamHttpMethod = [HttpMethods.Get],
-        AuthenticationOptions = new()
-        {
-            AuthenticationProviderKeys = ["Test"],
-        },
-    };
+        var route = GivenDefaultRoute(port);
+        route.AuthenticationOptions.AuthenticationProviderKeys = ["Test"];
+        return route;
+    }
 
     private Task GivenThereIsAnIdentityServerRunning(string apiName, AccessTokenType tokenType)
     {

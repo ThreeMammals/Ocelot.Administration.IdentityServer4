@@ -1,6 +1,5 @@
 using CacheManager.Core;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Ocelot.Cache.CacheManager;
 using Ocelot.Configuration.File;
@@ -57,18 +56,13 @@ public sealed class CacheManagerTests : IdentityServerSteps
         TtlSeconds = 10,
     };
 
-    private static FileRoute GivenRoute(string? upstream = null, FileCacheOptions? options = null) => new()
+    private static FileRoute GivenRoute(string? upstream = null, FileCacheOptions? options = null)
     {
-        DownstreamHostAndPorts =
-        [
-            new("localhost", 80),
-        ],
-        DownstreamScheme = Uri.UriSchemeHttps,
-        DownstreamPathTemplate = "/",
-        UpstreamHttpMethod = [HttpMethods.Get],
-        UpstreamPathTemplate = upstream ?? "/",
-        FileCacheOptions = options ?? DefaultFileCacheOptions,
-    };
+        var route = GivenRoute(80, upstream, null);
+        route.DownstreamScheme = Uri.UriSchemeHttps;
+        route.FileCacheOptions = options ?? DefaultFileCacheOptions;
+        return route;
+    }
 
     private static void WithCacheManager(IServiceCollection services)
     {

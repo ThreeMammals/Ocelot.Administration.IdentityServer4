@@ -1,7 +1,6 @@
 ﻿using IdentityServer4.Models;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Http;
-using Ocelot.Configuration.File;
 
 namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
@@ -17,23 +16,13 @@ public sealed class ClaimsToDownstreamPathTests : IdentityServerSteps
     public async Task Should_return_200_and_change_downstream_path()
     {
         var port = PortFinder.GetRandomPort();
-        var route = new FileRoute
+        var route = GivenRoute(port, "/users/{userId}", "/users/{userId}");
+        route.AuthenticationOptions = new()
         {
-            DownstreamPathTemplate = "/users/{userId}",
-            DownstreamHostAndPorts = [Localhost(port)],
-            DownstreamScheme = "http",
-            UpstreamPathTemplate = "/users/{userId}",
-            UpstreamHttpMethod = [HttpMethods.Get],
-            AuthenticationOptions = new()
-            {
-                AuthenticationProviderKeys = ["Test"],
-                AllowedScopes = ["openid", "offline_access", "api"],
-            },
-            ChangeDownstreamPathTemplate =
-            {
-                {"userId", "Claims[sub] > value[1] > |"},
-            },
+            AuthenticationProviderKeys = ["Test"],
+            AllowedScopes = ["openid", "offline_access", "api"],
         };
+        route.ChangeDownstreamPathTemplate.Add("userId", "Claims[sub] > value[1] > |");
         var configuration = GivenConfiguration(route);
         var user = new TestUser
         {

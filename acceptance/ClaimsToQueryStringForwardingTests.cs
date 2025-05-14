@@ -58,26 +58,23 @@ public sealed class ClaimsToQueryStringForwardingTests : IdentityServerSteps
         ],
     };
 
-    private static FileRoute GivenRoute(int port) => new()
+    private static FileRoute GivenRoute(int port)
     {
-        DownstreamPathTemplate = "/",
-        DownstreamHostAndPorts = [ Localhost(port) ],
-        DownstreamScheme = "http",
-        UpstreamPathTemplate = "/",
-        UpstreamHttpMethod = ["Get"],
-        AuthenticationOptions = new()
+        var route = GivenDefaultRoute(port);
+        route.AuthenticationOptions = new()
         {
             AuthenticationProviderKeys = ["Test"],
             AllowedScopes = ["openid", "offline_access", "api"],
-        },
-        AddQueriesToRequest =
+        };
+        route.AddQueriesToRequest = new()
         {
-            {"CustomerId", "Claims[CustomerId] > value"},
-            {"LocationId", "Claims[LocationId] > value"},
-            {"UserType", "Claims[sub] > value[0] > |"},
-            {"UserId", "Claims[sub] > value[1] > |"},
-        },
-    };
+            { "CustomerId", "Claims[CustomerId] > value" },
+            { "LocationId", "Claims[LocationId] > value" },
+            { "UserType", "Claims[sub] > value[0] > |" },
+            { "UserId", "Claims[sub] > value[1] > |" },
+        };
+        return route;
+    }
 
     private void GivenThereIsAServiceRunningOn(int port, HttpStatusCode statusCode) =>
         handler.GivenThereIsAServiceRunningOn(port, context =>

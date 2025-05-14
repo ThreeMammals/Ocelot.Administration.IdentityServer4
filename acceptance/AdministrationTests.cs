@@ -306,11 +306,11 @@ public sealed class AdministrationTests : IdentityServerSteps
     [Trait("OcPull", "232")]
     public async Task Should_return_response_200_with_call_re_routes_controller_when_using_own_identity_server_to_secure_admin_area()
     {
-        var port = PortFinder.GetRandomPort();
-        var identityServerUrl = DownstreamUrl(port);
+        _identityServerPort = PortFinder.GetRandomPort();
+        _identityServerUrl = DownstreamUrl(_identityServerPort);
         void options(JwtBearerOptions o)
         {
-            o.Authority = identityServerUrl;
+            o.Authority = _identityServerUrl;
             o.RequireHttpsMetadata = false;
             o.TokenValidationParameters = new()
             {
@@ -321,10 +321,10 @@ public sealed class AdministrationTests : IdentityServerSteps
         var ocUrl = DownstreamUrl(ocPort);
         var configuration = GivenConfiguration(ocUrl);
         GivenThereIsAConfiguration(configuration);
-        await GivenThereIsAnIdentityServerOn(identityServerUrl, "api");
+        await GivenThereIsAnIdentityServer("api");
 
         using var ocelot = await GivenOcelotIsRunningWithIdentityServerSettings(ocUrl, options);
-        await GivenIHaveAToken(identityServerUrl);
+        await GivenIHaveAToken();
         GivenIHaveAddedATokenToMyRequest();
         await WhenIGetUrlOnTheApiGateway("/administration/configuration");
         ThenTheStatusCodeShouldBe(HttpStatusCode.OK);
@@ -502,9 +502,9 @@ public sealed class AdministrationTests : IdentityServerSteps
     }
 
     private void GivenThereIsAServiceRunningOn(int port, string path) =>
-        handler.GivenThereIsAServiceRunningOn(port, path, async context =>
+        handler.GivenThereIsAServiceRunningOn(port, path, context =>
         {
             context.Response.StatusCode = (int)HttpStatusCode.OK;
-            await context.Response.WriteAsync(path);
+            return context.Response.WriteAsync(path);
         });
 }

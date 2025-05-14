@@ -15,49 +15,42 @@ namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 public class IdentityServerSteps : AcceptanceSteps
 {
     protected BearerToken? token;
-    protected readonly ServiceHandler handler;
-    private readonly int _identityServerPort;
-    private readonly string _identityServerUrl;
+    protected int _identityServerPort;
+    protected string _identityServerUrl;
     private IWebHost? _identityServer;
 
     public IdentityServerSteps() : base()
     {
-        handler = new ServiceHandler();
         _identityServerPort = PortFinder.GetRandomPort();
         _identityServerUrl = DownstreamUrl(_identityServerPort);
     }
 
     public override void Dispose()
     {
-        handler.Dispose();
         _identityServer?.Dispose();
         base.Dispose();
         GC.SuppressFinalize(this);
     }
 
-    public static ApiResource CreateApiResource(string apiName, IEnumerable<string>? extraScopes = null)
-        => new()
-        {
-            Name = apiName,
-            Description = $"My {apiName} API",
-            Enabled = true,
-            DisplayName = "test",
-            Scopes =
-            [
-                .. extraScopes ?? [],
-                apiName,
-                $"{apiName}.readOnly",
-            ],
-            ApiSecrets =
-            [
-                new ("secret".Sha256()),
-            ],
-            UserClaims =
-            [
-                "CustomerId",
-                "LocationId",
-            ],
-        };
+    public static ApiResource CreateApiResource(string apiName, IEnumerable<string>? extraScopes = null) => new()
+    {
+        Name = apiName,
+        Description = $"My {apiName} API",
+        Enabled = true,
+        DisplayName = "test",
+        Scopes = [
+            .. extraScopes ?? [],
+            apiName,
+            $"{apiName}.readOnly",
+        ],
+        ApiSecrets = [
+            new ("secret".Sha256()),
+        ],
+        UserClaims = [
+            "CustomerId",
+            "LocationId",
+        ],
+    };
 
     protected static Client CreateClientWithSecret(string clientId, Secret secret, AccessTokenType tokenType = AccessTokenType.Jwt, ApiScope[]? scopes = null)
     {
@@ -136,47 +129,44 @@ public class IdentityServerSteps : AcceptanceSteps
             .UseUrls(_identityServerUrl)
             .ConfigureServices(configureServices)
             .Configure(app => app.UseIdentityServer());
-        _identityServer = builder.Build();
-        return _identityServer.StartAsync()
-            .ContinueWith(t => VerifyIdentityServerStarted(_identityServerUrl));
+        return StartIdentityServer(builder);
     }
 
-    protected async Task GivenThereIsAnIdentityServerOn(string url, string apiName)
+    protected Task GivenThereIsAnIdentityServer(string apiName)
     {
         var tokenType = AccessTokenType.Jwt;
         ApiScope[] scopes = [ new(apiName) ];
         var clients = new Client[] { DefaultClient(tokenType, scopes) };
-        var builder = CreateIdentityServer(url, tokenType, scopes, clients);
-        _identityServer = builder.Build();
-        await _identityServer.StartAsync();
-        await VerifyIdentityServerStarted(url);
+        var builder = CreateIdentityServer(_identityServerUrl, tokenType, scopes, clients);
+        return StartIdentityServer(builder);
     }
 
-    protected async Task GivenThereIsAnIdentityServer(AccessTokenType tokenType)
+    protected Task GivenThereIsAnIdentityServer(AccessTokenType tokenType)
     {
         var scopes = new ApiScope[] { new("api"), new("api2") };
-        _identityServer = CreateIdentityServer(_identityServerUrl, tokenType, scopes)
-            .Build();
-        await _identityServer.StartAsync();
-        await VerifyIdentityServerStarted(_identityServerUrl);
+        var builder = CreateIdentityServer(_identityServerUrl, tokenType, scopes);
+        return StartIdentityServer(builder);
     }
 
-    protected async Task GivenThereIsAnIdentityServer(string apiName, AccessTokenType tokenType)
+    protected Task GivenThereIsAnIdentityServer(string apiName, AccessTokenType tokenType)
     {
         var scopes = new ApiScope[] { new(apiName) };
-        _identityServer = CreateIdentityServer(_identityServerUrl, tokenType, scopes)
-            .Build();
-        await _identityServer.StartAsync();
-        await VerifyIdentityServerStarted(_identityServerUrl);
+        var builder = CreateIdentityServer(_identityServerUrl, tokenType, scopes);
+        return StartIdentityServer(builder);
     }
 
-    protected async Task GivenThereIsAnIdentityServer(string apiName, AccessTokenType tokenType, IEnumerable<TestUser> users)
+    protected Task GivenThereIsAnIdentityServer(string apiName, AccessTokenType tokenType, IEnumerable<TestUser> users)
     {
         var scopes = new ApiScope[] { new(apiName) };
-        _identityServer = CreateIdentityServer(_identityServerUrl, tokenType, scopes, users: [.. users])
-            .Build();
-        await _identityServer.StartAsync();
-        await VerifyIdentityServerStarted(_identityServerUrl);
+        var builder = CreateIdentityServer(_identityServerUrl, tokenType, scopes, users: [.. users]);
+        return StartIdentityServer(builder);
+    }
+
+    private Task<Task> StartIdentityServer(IWebHostBuilder builder)
+    {
+        _identityServer = builder.Build();
+        return _identityServer.StartAsync()
+            .ContinueWith(t => VerifyIdentityServerStarted(_identityServerUrl));
     }
 
     protected void GivenIHaveAddedATokenToMyRequest() => GivenIHaveAddedATokenToMyRequest(token);
@@ -263,25 +253,22 @@ public class IdentityServerSteps : AcceptanceSteps
             .ContinueWith(t => VerifyIdentityServerStarted(adminPath, ocelotClient));
     }
 
-    public static FileRoute GivenDefaultAuthRoute(int port, string? upstreamHttpMethod = null, string? authProviderKey = null) => new()
+    public static FileRoute GivenDefaultAuthRoute(int port, string? upstreamHttpMethod = null, string? authProviderKey = null)
     {
-        DownstreamPathTemplate = "/",
-        DownstreamHostAndPorts = [ Localhost(port) ],
-        DownstreamScheme = Uri.UriSchemeHttp,
-        UpstreamPathTemplate = "/",
-        UpstreamHttpMethod = [upstreamHttpMethod ?? HttpMethods.Get],
-        AuthenticationOptions = new()
-        {
-            AuthenticationProviderKeys = [authProviderKey ?? "Test"],
-        },
-    };
+        var route = GivenDefaultRoute(port).WithMethods(upstreamHttpMethod ?? HttpMethods.Get);
+        route.AuthenticationOptions.AuthenticationProviderKeys = [authProviderKey ?? "Test"];
+        return route;
+    }
 
-    protected void GivenThereIsAServiceRunningOn(int port, HttpStatusCode statusCode, string responseBody) =>
-        handler.GivenThereIsAServiceRunningOn(port, async context =>
+    protected void GivenThereIsAServiceRunningOn(int port, HttpStatusCode statusCode, string responseBody)
+    {
+        Task MapStatus(HttpContext context)
         {
             context.Response.StatusCode = (int)statusCode;
-            await context.Response.WriteAsync(responseBody);
-        });
+            return context.Response.WriteAsync(responseBody);
+        }
+        handler.GivenThereIsAServiceRunningOn(port, MapStatus);
+    }
 
     private void WithOptions(IdentityServerAuthenticationOptions o)
     {

@@ -1,7 +1,6 @@
 ﻿using IdentityServer4.Models;
 using IdentityServer4.Test;
 using Microsoft.AspNetCore.Http;
-using Ocelot.Configuration.File;
 
 namespace Ocelot.Administration.IdentityServer4.AcceptanceTests;
 
@@ -14,25 +13,18 @@ public sealed class ClaimsToHeadersForwardingTests : IdentityServerSteps
     public async Task Should_return_response_200_and_foward_claim_as_header()
     {
         var port = PortFinder.GetRandomPort();
-        var route = new FileRoute
+        var route = GivenDefaultRoute(port);
+        route.AuthenticationOptions = new()
         {
-            DownstreamPathTemplate = "/",
-            DownstreamHostAndPorts = [Localhost(port)],
-            DownstreamScheme = "http",
-            UpstreamPathTemplate = "/",
-            UpstreamHttpMethod = [HttpMethods.Get],
-            AuthenticationOptions = new()
-            {
-                AuthenticationProviderKeys = ["Test"],
-                AllowedScopes = ["openid", "offline_access", "api"],
-            },
-            AddHeadersToRequest =
-            {
-                {"CustomerId", "Claims[CustomerId] > value"},
-                {"LocationId", "Claims[LocationId] > value"},
-                {"UserType", "Claims[sub] > value[0] > |"},
-                {"UserId", "Claims[sub] > value[1] > |"},
-            },
+            AuthenticationProviderKeys = ["Test"],
+            AllowedScopes = ["openid", "offline_access", "api"],
+        };
+        route.AddHeadersToRequest = new()
+        {
+            {"CustomerId", "Claims[CustomerId] > value"},
+            {"LocationId", "Claims[LocationId] > value"},
+            {"UserType", "Claims[sub] > value[0] > |"},
+            {"UserId", "Claims[sub] > value[1] > |"},
         };
         var configuration = GivenConfiguration(route);
         var user = new TestUser

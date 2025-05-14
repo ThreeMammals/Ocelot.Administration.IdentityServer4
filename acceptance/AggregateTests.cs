@@ -28,14 +28,14 @@ public sealed class AggregateTests : IdentityServerSteps
         const string Api_Name = "api";
         var port1 = PortFinder.GetRandomPort();
         var port2 = PortFinder.GetRandomPort();
-        var port3 = PortFinder.GetRandomPort();
+        _identityServerPort = PortFinder.GetRandomPort();
         var route1 = GivenRoute(port1, "/laura", "Laura");
         var route2 = GivenRoute(port2, "/tom", "Tom");
         var configuration = GivenConfiguration(route1, route2);
-        var identityServerUrl = DownstreamUrl(port3);
+        _identityServerUrl = DownstreamUrl(_identityServerPort);
         void ConfigureOptions(IdentityServerAuthenticationOptions o)
         {
-            o.Authority = identityServerUrl;
+            o.Authority = _identityServerUrl;
             o.ApiName = Api_Name;
             o.RequireHttpsMetadata = false;
             o.SupportedTokens = SupportedTokens.Both;
@@ -76,10 +76,10 @@ public sealed class AggregateTests : IdentityServerSteps
             };
             await app.UseOcelot(configuration);
         }
-        await GivenThereIsAnIdentityServerOn(identityServerUrl, Api_Name);
+        await GivenThereIsAnIdentityServer(Api_Name);
         GivenServiceIsRunning(0, port1, "/", 200, "{Hello from Laura}");
         GivenServiceIsRunning(1, port2, "/", 200, "{Hello from Tom}");
-        await GivenIHaveAToken(identityServerUrl);
+        await GivenIHaveAToken();
         GivenThereIsAConfiguration(configuration);
         GivenOcelotIsRunning(null!, ConfigureServices, ConfigureAppPipeline);
         GivenIHaveAddedATokenToMyRequest();
@@ -102,10 +102,7 @@ public sealed class AggregateTests : IdentityServerSteps
 
     private void GivenServiceIsRunning(int index, int port, string basePath, int statusCode, string responseBody)
         => GivenServiceIsRunning(index, port, basePath, statusCode,
-            async context =>
-            {
-                await context.Response.WriteAsync(responseBody);
-            });
+            context => context.Response.WriteAsync(responseBody));
 
     private void GivenServiceIsRunning(int index, int port, string basePath, int statusCode, Action<HttpContext> processContext)
     {
