@@ -15,7 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Ocelot\test\Ocelot.Testing\Ocelot.Testing.csproj" />
     <ProjectReference Include="..\src\Ocelot.Administration.IdentityServer4.csproj" />
   </ItemGroup>
   <ItemGroup>
@@ -33,14 +32,15 @@
     </PackageReference>
     <PackageReference Include="CacheManager.Serialization.Json" Version="2.0.0" />
     <PackageReference Include="Ocelot.Cache.CacheManager" Version="24.0.0" />
+    <PackageReference Include="Ocelot.Testing" Version="24.0.0" />
   </ItemGroup>
   <!-- Conditionally obtain references for the net 8.0 target -->
   <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="8.0.16" />
   </ItemGroup>
   <!-- Conditionally obtain references for the net 9.0 target -->
   <ItemGroup Condition=" '$(TargetFramework)' == 'net9.0' ">
-    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="9.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" Version="9.0.5" />
   </ItemGroup>
 
   <ItemGroup>

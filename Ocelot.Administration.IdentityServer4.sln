@@ -11,10 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ocelot.Administration.Ident
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ocelot.Administration.IdentityServer4.AcceptanceTests", "acceptance\Ocelot.Administration.IdentityServer4.AcceptanceTests.csproj", "{E153AF87-77DE-421F-86BC-3E5B4A72956D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ocelot", "..\Ocelot\src\Ocelot\Ocelot.csproj", "{76A4A34F-8799-F712-3EC2-37304A41F110}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ocelot.Testing", "..\Ocelot\test\Ocelot.Testing\Ocelot.Testing.csproj", "{FF7A4C4B-3F30-B61E-7981-F3C27656CAD9}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,14 +33,6 @@ Global
 		{E153AF87-77DE-421F-86BC-3E5B4A72956D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E153AF87-77DE-421F-86BC-3E5B4A72956D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E153AF87-77DE-421F-86BC-3E5B4A72956D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{76A4A34F-8799-F712-3EC2-37304A41F110}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{76A4A34F-8799-F712-3EC2-37304A41F110}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{76A4A34F-8799-F712-3EC2-37304A41F110}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{76A4A34F-8799-F712-3EC2-37304A41F110}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FF7A4C4B-3F30-B61E-7981-F3C27656CAD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FF7A4C4B-3F30-B61E-7981-F3C27656CAD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FF7A4C4B-3F30-B61E-7981-F3C27656CAD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FF7A4C4B-3F30-B61E-7981-F3C27656CAD9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

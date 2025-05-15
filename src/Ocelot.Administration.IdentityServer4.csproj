@@ -5,9 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 
-    <VersionPrefix>23.4</VersionPrefix>
-    <Version>23.4.3</Version>
-    <AssemblyVersion>23.4.3</AssemblyVersion>
+    <VersionPrefix>24.0</VersionPrefix>
+    <Version>24.0.0</Version>
     <Copyright>Three Mammals</Copyright>
     <Product>Ocelot</Product>
     <Authors>Tom Pallister, Raman Maksimchuk</Authors>
@@ -21,12 +20,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--<PackageReference Include="Ocelot" Version="24.0.0" />-->
+    <PackageReference Include="Ocelot" Version="24.0.0" />
     <PackageReference Include="IdentityServer4" Version="4.1.2" />
     <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="3.0.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\Ocelot\src\Ocelot\Ocelot.csproj" />
-  </ItemGroup>
 </Project>
