@@ -1,0 +1,110 @@
+# Publishes beta-versions only
+name: Publish Package
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check .NET 8
+      id: check-dotnet8
+      run: |
+        DOTNET8_VERSION=$(dotnet --version)
+        if [[ "$DOTNET8_VERSION" =~ ^8\.0\.[0-9]+$ ]]; then
+          echo "dotnet8_installed=true" >> $GITHUB_ENV
+        else
+          echo "dotnet8_installed=false" >> $GITHUB_ENV
+        fi
+    - name: Setup .NET 8
+      if: env.dotnet8_installed == 'false'
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        dotnet-quality: 'ga'
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Restore
+      run: dotnet restore ./Ocelot.Administration.IdentityServer4.sln -p:TargetFramework=net8.0
+    - name: Build
+      run: dotnet build --no-restore ./Ocelot.Administration.IdentityServer4.sln --framework net8.0
+    - name: Unit tests
+      run: dotnet test --no-restore --no-build ./unit/Ocelot.Administration.IdentityServer4.UnitTests.csproj --collect:"XPlat Code Coverage" --framework net8.0
+    - name: Acceptance tests
+      run: dotnet test --no-restore --no-build ./acceptance/Ocelot.Administration.IdentityServer4.AcceptanceTests.csproj --framework net8.0
+    - name: Find coverage file # https://reportgenerator.io/
+      id: coverage
+      run: |
+        echo "GITHUB REF is ${{ github.ref }}"
+        echo "GITHUB REF NAME is ${{ github.ref_name }}"
+        echo "GITHUB SHA is ${{ github.sha }}"
+        coverage_1st_folder=$(ls -d ./unit/TestResults/*/ | head -1)
+        echo "Detected first folder : $coverage_1st_folder"
+        coverage_file="${coverage_1st_folder%/}/coverage.cobertura.xml"
+        echo "Detecting coverage file... -> $coverage_file"
+        if [ -f "$coverage_file" ]; then
+          echo "Coverage file exists."
+          echo "FILE_EXISTS=true" >> $GITHUB_OUTPUT
+          echo "COVERAGE_FILE=$coverage_file" >> $GITHUB_OUTPUT
+        else
+          echo "Coverage file DOES NOT exist!"
+          echo "FILE_EXISTS=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+        # dotnet tool restore
+        # dotnet tool run reportgenerator -reports:$coverage_file -targetdir:coveragereport
+    - name: Generate coverage report (HTML)
+      if: steps.coverage.outputs.FILE_EXISTS == 'true'
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
+      with:
+        reports: ${{ steps.coverage.outputs.COVERAGE_FILE }}
+        targetdir: coveragereport
+        reporttypes: Html
+    - name: Generate coverage report (Markdown)
+      if: steps.coverage.outputs.FILE_EXISTS == 'true'
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
+      with:
+        reports: ${{ steps.coverage.outputs.COVERAGE_FILE }}
+        targetdir: coveragereport-md
+        reporttypes: MarkdownSummaryGithub
+    - name: List report files
+      run: |
+        echo List files of HTML report...
+        find coveragereport -type f -print
+        echo -e "\n\nList files of MD report..."
+        find coveragereport-md -type f -print
+
+  # build2:
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     packages: write
+  #     contents: read
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup .NET
+  #       uses: actions/setup-dotnet@v4
+  #       with:
+  #         dotnet-version: |
+  #           8.0.x
+  #           9.0.x
+
+  #     - name: .NET Info
+  #       run: dotnet --info
+
+  #     - name: Restore dependencies
+  #       run: dotnet restore ./Ocelot.Administration.IdentityServer4.sln
+
+  #     - name: Build project
+  #       run: dotnet build ./src/Ocelot.Testing.csproj --configuration Release --no-restore
+
+      # - name: Pack project
+      #   run: dotnet pack ./src/Ocelot.Testing.csproj --configuration Release --output ./packages
+
+      # - name: Publish to GitHub Packages
+      #   run: dotnet nuget push ./packages/*.nupkg --source "https://nuget.pkg.github.com/ThreeMammals/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+
+      # - name: Publish to NuGet
+      #   run: dotnet nuget push ./packages/*.nupkg --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_API_KEY_2025 }} --skip-duplicate
