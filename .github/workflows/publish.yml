@@ -61,7 +61,7 @@ jobs:
         # Install XML tools
         echo Installing XML tools ...
         sudo apt update
-        sudo apt install libxml2-utils xmlstarlet
+        sudo apt install libxml2-utils # aka xmllint read-command. xmlstarlet is not required
 
     # Extract actual coverage % from the Coverlet XML-file
     - name: Coverage by unit tests
@@ -76,15 +76,8 @@ jobs:
         echo "BranchCoverage=$branch_coverage" >> $GITHUB_OUTPUT
         echo "BRANCH_COVERAGE=$branch_coverage" >> $GITHUB_ENV
 
-    # The action below replaces the following command: dotnet tool run reportgenerator -reports:$coverage_file -targetdir:coveragereport
+    # The action below replaces the following command: dotnet tool run reportgenerator -reports:$coverage_file -targetdir:coveragereport-md -reporttypes:MarkdownSummaryGithub
     # Docs: https://reportgenerator.io/
-    - name: Generate coverage report (HTML)
-      if: steps.files.outputs.COVERAGE_FILE_EXISTS == 'true'
-      uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
-      with:
-        reports: ${{ steps.files.outputs.COVERAGE_FILE }}
-        targetdir: coveragereport
-        reporttypes: Html
     - name: Generate coverage report (Markdown)
       if: steps.files.outputs.COVERAGE_FILE_EXISTS == 'true'
       uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
@@ -92,20 +85,39 @@ jobs:
         reports: ${{ steps.files.outputs.COVERAGE_FILE }}
         targetdir: coveragereport-md
         reporttypes: MarkdownSummaryGithub
+
+    # DOCS Storing and sharing data from a workflow -> https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/storing-and-sharing-data-from-a-workflow
     - name: Upload coverage MD-report artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
       with:
-        name: CoverageReport # Artifact name        
+        name: CoverageReport-markdown # Artifact name        
         path: coveragereport-md # Directory containing files to upload
     - name: Publish coverage in build summary # Only applicable if 'MarkdownSummaryGithub' or one of the other Markdown report types is generated
-      run: cat coveragereport-md/SummaryGithub.md >> $GITHUB_STEP_SUMMARY # Adjust path and filename if necessary
-      shell: bash
-    - name: List report files
       run: |
-        echo List files of HTML report...
-        find coveragereport -type f -print | sort
-        echo List files of MD report...
+        echo Listing files of MD report...
         find coveragereport-md -type f -print | sort
+        echo Publishing coverage in build summary...
+        cat coveragereport-md/SummaryGithub.md >> $GITHUB_STEP_SUMMARY # Adjust path and filename if necessary
+      shell: bash
+
+    # The action below replaces the following command: dotnet tool run reportgenerator -reports:$coverage_file -targetdir:coveragereport -reporttypes:HtmlInline
+    # Docs: https://reportgenerator.io/
+    - name: Generate coverage report (HTML)
+      if: steps.files.outputs.COVERAGE_FILE_EXISTS == 'true'
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
+      with:
+        reports: ${{ steps.files.outputs.COVERAGE_FILE }}
+        targetdir: coveragereport
+        reporttypes: HtmlInline # Html is applicable for websites only
+    - name: List HTML report files
+      run: |
+        echo Listing files of HTML report...
+        find coveragereport -type f -print | sort
+    - name: Upload coverage HTML-report artifact
+      uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
+      with:
+        name: CoverageReport-html
+        path: coveragereport/*.html
 
   # build2:
   #   runs-on: ubuntu-latest
