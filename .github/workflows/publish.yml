@@ -19,7 +19,7 @@ jobs:
         fi
     - name: Setup .NET 8
       if: env.dotnet8_installed == 'false'
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v4 # https://github.com/actions/setup-dotnet
       with:
         dotnet-version: 8.0.x
         dotnet-quality: 'ga'
@@ -33,47 +33,79 @@ jobs:
       run: dotnet test --no-restore --no-build ./unit/Ocelot.Administration.IdentityServer4.UnitTests.csproj --collect:"XPlat Code Coverage" --framework net8.0
     - name: Acceptance tests
       run: dotnet test --no-restore --no-build ./acceptance/Ocelot.Administration.IdentityServer4.AcceptanceTests.csproj --framework net8.0
-    - name: Find coverage file # https://reportgenerator.io/
-      id: coverage
+    - name: Find files
+      id: files
       run: |
         echo "GITHUB REF is ${{ github.ref }}"
         echo "GITHUB REF NAME is ${{ github.ref_name }}"
         echo "GITHUB SHA is ${{ github.sha }}"
+        # https://reportgenerator.io/
         coverage_1st_folder=$(ls -d ./unit/TestResults/*/ | head -1)
         echo "Detected first folder : $coverage_1st_folder"
         coverage_file="${coverage_1st_folder%/}/coverage.cobertura.xml"
         echo "Detecting coverage file... -> $coverage_file"
         if [ -f "$coverage_file" ]; then
-          echo "Coverage file exists."
-          echo "FILE_EXISTS=true" >> $GITHUB_OUTPUT
+          echo Coverage file exists.
+          echo "COVERAGE_FILE_EXISTS=true" >> $GITHUB_OUTPUT
           echo "COVERAGE_FILE=$coverage_file" >> $GITHUB_OUTPUT
         else
-          echo "Coverage file DOES NOT exist!"
-          echo "FILE_EXISTS=false" >> $GITHUB_OUTPUT
+          echo Coverage file DOES NOT exist!
+          echo "COVERAGE_FILE_EXISTS=false" >> $GITHUB_OUTPUT
           exit 1
         fi
-        # dotnet tool restore
-        # dotnet tool run reportgenerator -reports:$coverage_file -targetdir:coveragereport
+    - name: Install tools
+      run: |
+        # .NET tools aka .config/dotnet-tools.json
+        echo Installing .NET tools aka dotnet-tools.json ...
+        dotnet tool restore
+        # Install XML tools
+        echo Installing XML tools ...
+        sudo apt update
+        sudo apt install libxml2-utils xmlstarlet
+
+    # Extract actual coverage % from the Coverlet XML-file
+    - name: Coverage by unit tests
+      id: coverage
+      run: |
+        line_coverage=$(xmllint --xpath "string(//coverage/@line-rate)" ${{ steps.files.outputs.COVERAGE_FILE }})
+        echo Line coverage: $line_coverage
+        echo "LineCoverage=$line_coverage" >> $GITHUB_OUTPUT
+        echo "LINE_COVERAGE=$line_coverage" >> $GITHUB_ENV
+        branch_coverage=$(xmllint --xpath "string(//coverage/@branch-rate)" ${{ steps.files.outputs.COVERAGE_FILE }})
+        echo Branch coverage: $branch_coverage
+        echo "BranchCoverage=$branch_coverage" >> $GITHUB_OUTPUT
+        echo "BRANCH_COVERAGE=$branch_coverage" >> $GITHUB_ENV
+
+    # The action below replaces the following command: dotnet tool run reportgenerator -reports:$coverage_file -targetdir:coveragereport
+    # Docs: https://reportgenerator.io/
     - name: Generate coverage report (HTML)
-      if: steps.coverage.outputs.FILE_EXISTS == 'true'
+      if: steps.files.outputs.COVERAGE_FILE_EXISTS == 'true'
       uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
       with:
-        reports: ${{ steps.coverage.outputs.COVERAGE_FILE }}
+        reports: ${{ steps.files.outputs.COVERAGE_FILE }}
         targetdir: coveragereport
         reporttypes: Html
     - name: Generate coverage report (Markdown)
-      if: steps.coverage.outputs.FILE_EXISTS == 'true'
+      if: steps.files.outputs.COVERAGE_FILE_EXISTS == 'true'
       uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
       with:
-        reports: ${{ steps.coverage.outputs.COVERAGE_FILE }}
+        reports: ${{ steps.files.outputs.COVERAGE_FILE }}
         targetdir: coveragereport-md
         reporttypes: MarkdownSummaryGithub
+    - name: Upload coverage MD-report artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CoverageReport # Artifact name        
+        path: coveragereport-md # Directory containing files to upload
+    - name: Publish coverage in build summary # Only applicable if 'MarkdownSummaryGithub' or one of the other Markdown report types is generated
+      run: cat coveragereport-md/SummaryGithub.md >> $GITHUB_STEP_SUMMARY # Adjust path and filename if necessary
+      shell: bash
     - name: List report files
       run: |
         echo List files of HTML report...
-        find coveragereport -type f -print
-        echo -e "\n\nList files of MD report..."
-        find coveragereport-md -type f -print
+        find coveragereport -type f -print | sort
+        echo List files of MD report...
+        find coveragereport-md -type f -print | sort
 
   # build2:
   #   runs-on: ubuntu-latest
