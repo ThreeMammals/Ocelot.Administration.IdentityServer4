@@ -119,36 +119,38 @@ jobs:
         name: CoverageReport-html
         path: coveragereport/*.html
 
-  # build2:
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     packages: write
-  #     contents: read
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  #     - name: Setup .NET
-  #       uses: actions/setup-dotnet@v4
-  #       with:
-  #         dotnet-version: |
-  #           8.0.x
-  #           9.0.x
+      - name: .NET Version
+        run: dotnet --version
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+      - name: .NET Info
+        run: dotnet --info
 
-  #     - name: .NET Info
-  #       run: dotnet --info
+      - name: Restore dependencies
+        run: dotnet restore ./Ocelot.Administration.IdentityServer4.sln
 
-  #     - name: Restore dependencies
-  #       run: dotnet restore ./Ocelot.Administration.IdentityServer4.sln
+      - name: Build project
+        run: dotnet build ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --no-restore
 
-  #     - name: Build project
-  #       run: dotnet build ./src/Ocelot.Testing.csproj --configuration Release --no-restore
+      - name: Pack project
+        run: dotnet pack ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --output ./packages
 
-      # - name: Pack project
-      #   run: dotnet pack ./src/Ocelot.Testing.csproj --configuration Release --output ./packages
+      - name: Publish to GitHub Packages
+        run: dotnet nuget push ./packages/*.nupkg --source "https://nuget.pkg.github.com/ThreeMammals/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
 
-      # - name: Publish to GitHub Packages
-      #   run: dotnet nuget push ./packages/*.nupkg --source "https://nuget.pkg.github.com/ThreeMammals/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
-
-      # - name: Publish to NuGet
-      #   run: dotnet nuget push ./packages/*.nupkg --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_API_KEY_2025 }} --skip-duplicate
+      - name: Publish to NuGet
+        run: dotnet nuget push ./packages/*.nupkg --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_API_KEY_2025 }} --skip-duplicate
