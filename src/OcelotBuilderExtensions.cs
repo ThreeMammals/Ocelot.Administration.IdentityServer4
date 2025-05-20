@@ -89,8 +89,6 @@ public static class OcelotBuilderExtensions
 #pragma warning disable IDE0079 // Remove unnecessary suppression
 #pragma warning disable SYSLIB0057 // X509Certificate2 and X509Certificate constructors for binary and file content are obsolete
             var cert = new X509Certificate2(identityServerConfiguration.CredentialsSigningCertificateLocation, identityServerConfiguration.CredentialsSigningCertificatePassword, X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.Exportable);
-#pragma warning restore SYSLIB0057
-#pragma warning restore IDE0079
             identityServerBuilder.AddSigningCredential(cert);
         }
     }

@@ -33,6 +33,7 @@
     <Using Include="Moq" />
     <Using Include="Xunit" />
     <Using Include="Ocelot.Testing" />
+    <None Update="mycert.pfx" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
 </Project>
