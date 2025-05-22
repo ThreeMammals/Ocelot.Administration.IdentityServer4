@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Ocelot.DependencyInjection;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Ocelot.Administration.IdentityServer4.UnitTests;
 
@@ -33,13 +34,16 @@ public class OcelotBuilderExtensionsTests : UnitTest
     [Fact]
     public void AddAdministration_WithSecret_AdminPathIsRegistered()
     {
-        // Arrange, Act
+        // Arrange
+        var adminPath = AdminPath();
+
+        // Act
         var ocelotBuilder = _services.AddOcelot(_configRoot);
-        ocelotBuilder.AddAdministration("/administration", "secret");
+        ocelotBuilder.AddAdministration(adminPath, TestID);
         var provider = _services.BuildServiceProvider(true);
 
         // Assert
-        AssertCorrectAdminPathIsRegistered(provider, "/administration");
+        AssertCorrectAdminPathIsRegistered(provider, adminPath);
         AssertKeysStoreIsRegistered(provider);
     }
 
@@ -47,16 +51,17 @@ public class OcelotBuilderExtensionsTests : UnitTest
     public void AddAdministration_WithSecretAndWithSigningCertificateEnvVars_AdminPathIsRegistered()
     {
         // Arrange
+        var adminPath = AdminPath();
         Environment.SetEnvironmentVariable(IdentityServerConfigurationCreator.OCELOT_CERTIFICATE, "mycert.pfx");
         Environment.SetEnvironmentVariable(IdentityServerConfigurationCreator.OCELOT_CERTIFICATE_PASSWORD, "password");
 
         // Act
         var ocelotBuilder = _services.AddOcelot(_configRoot);
-        ocelotBuilder.AddAdministration("/administration", "password");
+        ocelotBuilder.AddAdministration(adminPath, "password");
         var provider = _services.BuildServiceProvider(true);
 
         // Assert
-        AssertCorrectAdminPathIsRegistered(provider, "/administration");
+        AssertCorrectAdminPathIsRegistered(provider, adminPath);
         AssertKeysStoreIsRegistered(provider);
     }
 
@@ -64,18 +69,22 @@ public class OcelotBuilderExtensionsTests : UnitTest
     public void AddAdministration_WithIdentityServerOptions_AdminPathIsRegistered()
     {
         // Arrange
+        var adminPath = AdminPath();
         static void options(JwtBearerOptions o)
         {
         }
 
         // Act
         var ocelotBuilder = _services.AddOcelot(_configRoot);
-        ocelotBuilder.AddAdministration("/administration", options);
+        ocelotBuilder.AddAdministration(adminPath, options);
         var provider = _services.BuildServiceProvider(true);
 
         // Assert
-        AssertCorrectAdminPathIsRegistered(provider, "/administration");
+        AssertCorrectAdminPathIsRegistered(provider, adminPath);
     }
+
+    private string AdminPath([CallerMemberName] string? testName = null)
+        => $"/{nameof(OcelotBuilderExtensionsTests)}/{testName ?? TestID}";
 
     private static void AssertCorrectAdminPathIsRegistered(ServiceProvider provider, string expected)
     {

@@ -146,8 +146,8 @@ jobs:
           echo ------------------------
           cat README.md
           echo ------------------------
-          # Replace "AAA" with "BBB" and "CCC" with "DDD" in a UTF-8 encoded file
-          sed -i 's|/ocelot_icon.png|https://raw.githubusercontent.com/ThreeMammals/Ocelot.Administration.IdentityServer4/refs/heads/main/ocelot_icon.png|g; s|/idser4_logo.png|https://raw.githubusercontent.com/ThreeMammals/Ocelot.Administration.IdentityServer4/refs/heads/main/identity-server-4_logo.png|g' README.md
+          # Replaces relative GitHub paths with NuGet-friendly absolute URLs
+          sed -i 's|/ocelot_icon.png|https://raw.githubusercontent.com/ThreeMammals/Ocelot.Administration.IdentityServer4/refs/heads/main/ocelot_icon.png|g; s|/idser4_logo.png|https://raw.githubusercontent.com/ThreeMammals/Ocelot.Administration.IdentityServer4/refs/heads/main/idser4_logo.png|g' README.md
           echo New content of README.md
           echo ------------------------
           cat README.md
