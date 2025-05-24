@@ -1,5 +1,5 @@
 # Publishes beta-versions only
-name: Publish Package
+name: Package
 on:
   push:
     branches:
@@ -32,25 +32,39 @@ jobs:
     - name: Unit tests
       run: dotnet test --no-restore --no-build ./unit/Ocelot.Administration.IdentityServer4.UnitTests.csproj --collect:"XPlat Code Coverage" --framework net8.0
     - name: Acceptance tests
-      run: dotnet test --no-restore --no-build ./acceptance/Ocelot.Administration.IdentityServer4.AcceptanceTests.csproj --framework net8.0
+      run: dotnet test --no-restore --no-build ./acceptance/Ocelot.Administration.IdentityServer4.AcceptanceTests.csproj --collect:"XPlat Code Coverage" --framework net8.0
     - name: Find files
       id: files
       run: |
         echo "GITHUB REF is ${{ github.ref }}"
         echo "GITHUB REF NAME is ${{ github.ref_name }}"
         echo "GITHUB SHA is ${{ github.sha }}"
-        # https://reportgenerator.io/
+        # Coverage by unit tests -> https://github.com/coverlet-coverage/coverlet
         coverage_1st_folder=$(ls -d ./unit/TestResults/*/ | head -1)
         echo "Detected first folder : $coverage_1st_folder"
         coverage_file="${coverage_1st_folder%/}/coverage.cobertura.xml"
-        echo "Detecting coverage file... -> $coverage_file"
+        echo "Detecting unit coverage file... -> $coverage_file"
         if [ -f "$coverage_file" ]; then
-          echo Coverage file exists.
-          echo "COVERAGE_FILE_EXISTS=true" >> $GITHUB_OUTPUT
-          echo "COVERAGE_FILE=$coverage_file" >> $GITHUB_OUTPUT
+          echo Unit coverage file exists.
+          echo "UNIT_COVERAGE_FILE_EXISTS=true" >> $GITHUB_OUTPUT
+          echo "UNIT_COVERAGE_FILE=$coverage_file" >> $GITHUB_OUTPUT
         else
-          echo Coverage file DOES NOT exist!
-          echo "COVERAGE_FILE_EXISTS=false" >> $GITHUB_OUTPUT
+          echo Unit coverage file DOES NOT exist!
+          echo "UNIT_COVERAGE_FILE_EXISTS=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+        # Coverage by acceptance tests -> https://github.com/coverlet-coverage/coverlet
+        coverage_1st_folder=$(ls -d ./acceptance/TestResults/*/ | head -1)
+        echo "Detected first folder : $coverage_1st_folder"
+        coverage_file="${coverage_1st_folder%/}/coverage.cobertura.xml"
+        echo "Detecting acceptance coverage file... -> $coverage_file"
+        if [ -f "$coverage_file" ]; then
+          echo Acceptance coverage file exists.
+          echo "ACCEPTANCE_COVERAGE_FILE_EXISTS=true" >> $GITHUB_OUTPUT
+          echo "ACCEPTANCE_COVERAGE_FILE=$coverage_file" >> $GITHUB_OUTPUT
+        else
+          echo Acceptance coverage file DOES NOT exist!
+          echo "ACCEPTANCE_COVERAGE_FILE_EXISTS=false" >> $GITHUB_OUTPUT
           exit 1
         fi
     - name: Install tools
@@ -64,60 +78,111 @@ jobs:
         sudo apt install libxml2-utils # aka xmllint read-command. xmlstarlet is not required
 
     # Extract actual coverage % from the Coverlet XML-file
-    - name: Coverage by unit tests
+    - name: Read coverage
       id: coverage
       run: |
-        line_coverage=$(xmllint --xpath "string(//coverage/@line-rate)" ${{ steps.files.outputs.COVERAGE_FILE }})
-        echo Line coverage: $line_coverage
-        echo "LineCoverage=$line_coverage" >> $GITHUB_OUTPUT
-        echo "LINE_COVERAGE=$line_coverage" >> $GITHUB_ENV
-        branch_coverage=$(xmllint --xpath "string(//coverage/@branch-rate)" ${{ steps.files.outputs.COVERAGE_FILE }})
-        echo Branch coverage: $branch_coverage
-        echo "BranchCoverage=$branch_coverage" >> $GITHUB_OUTPUT
-        echo "BRANCH_COVERAGE=$branch_coverage" >> $GITHUB_ENV
+        echo Coverage by unit tests
+        line_coverage_u=$(xmllint --xpath "string(//coverage/@line-rate)" ${{ steps.files.outputs.UNIT_COVERAGE_FILE }})
+        echo "  Line coverage: $line_coverage_u"
+        echo "LineCoverageUnit=$line_coverage_u" >> $GITHUB_OUTPUT
+        echo "LINE_COVERAGE_UNIT=$line_coverage_u" >> $GITHUB_ENV
+        branch_coverage_u=$(xmllint --xpath "string(//coverage/@branch-rate)" ${{ steps.files.outputs.UNIT_COVERAGE_FILE }})
+        echo "  Branch coverage: $branch_coverage_u"
+        echo "BranchCoverageUnit=$branch_coverage_u" >> $GITHUB_OUTPUT
+        echo "BRANCH_COVERAGE_UNIT=$branch_coverage_u" >> $GITHUB_ENV
+        echo Coverage by acceptance tests
+        line_coverage_a=$(xmllint --xpath "string(//coverage/@line-rate)" ${{ steps.files.outputs.ACCEPTANCE_COVERAGE_FILE }})
+        echo "  Line coverage: $line_coverage_a"
+        echo "LineCoverageAcceptance=$line_coverage_a" >> $GITHUB_OUTPUT
+        echo "LINE_COVERAGE_ACCEPTANCE=$line_coverage_a" >> $GITHUB_ENV
+        branch_coverage_a=$(xmllint --xpath "string(//coverage/@branch-rate)" ${{ steps.files.outputs.ACCEPTANCE_COVERAGE_FILE }})
+        echo "  Branch coverage: $branch_coverage_a"
+        echo "BranchCoverageAcceptance=$branch_coverage_a" >> $GITHUB_OUTPUT
+        echo "BRANCH_COVERAGE_ACCEPTANCE=$branch_coverage_a" >> $GITHUB_ENV
+        lcu=$(printf "%1.4f" $line_coverage_u)
+        lca=$(printf "%1.4f" $line_coverage_a)
+        bcu=$(printf "%1.4f" $branch_coverage_u)
+        bca=$(printf "%1.4f" $branch_coverage_a)
+        echo '+------ COVERAGE MATRIX -------+'
+        echo '|            |  Line  | Branch |'
+        echo '|------------|--------|--------|'
+        echo '|       Unit |' $lcu \| $bcu  \|
+        echo '| Acceptance |' $lca \| $bca  \|
+        echo '+------------------------------+'
 
     # The action below replaces the following command: dotnet tool run reportgenerator -reports:$coverage_file -targetdir:coveragereport-md -reporttypes:MarkdownSummaryGithub
     # Docs: https://reportgenerator.io/
-    - name: Generate coverage report (Markdown)
-      if: steps.files.outputs.COVERAGE_FILE_EXISTS == 'true'
+    - name: Generate coverage report (Unit)
+      if: steps.files.outputs.UNIT_COVERAGE_FILE_EXISTS == 'true'
       uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
       with:
-        reports: ${{ steps.files.outputs.COVERAGE_FILE }}
-        targetdir: coveragereport-md
-        reporttypes: MarkdownSummaryGithub
+        reports: ${{ steps.files.outputs.UNIT_COVERAGE_FILE }}
+        targetdir: coveragereport-u
+        reporttypes: HtmlInline;MarkdownSummaryGithub
+    - name: Generate coverage report (Acceptance)
+      if: steps.files.outputs.ACCEPTANCE_COVERAGE_FILE_EXISTS == 'true'
+      uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
+      with:
+        reports: ${{ steps.files.outputs.ACCEPTANCE_COVERAGE_FILE }}
+        targetdir: coveragereport-a
+        reporttypes: HtmlInline;MarkdownSummaryGithub
+    - name: List report files
+      run: |
+        echo Listing files of unit-report...
+        find coveragereport-u -type f -print | sort
+        echo Listing files of acceptance-report...
+        find coveragereport-a -type f -print | sort
 
     # DOCS Storing and sharing data from a workflow -> https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/storing-and-sharing-data-from-a-workflow
-    - name: Upload coverage MD-report artifact
+    - name: Upload artifacts of coverage report (Unit)
+      if: steps.files.outputs.UNIT_COVERAGE_FILE_EXISTS == 'true' && success()
       uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
       with:
-        name: CoverageReport-markdown # Artifact name        
-        path: coveragereport-md # Directory containing files to upload
-    - name: Publish coverage in build summary # Only applicable if 'MarkdownSummaryGithub' or one of the other Markdown report types is generated
+        name: CoverageReport-UnitTests # artifact name
+        path: coveragereport-u # directory containing files to upload
+    - name: Upload artifacts of coverage report (Acceptance)
+      if: steps.files.outputs.ACCEPTANCE_COVERAGE_FILE_EXISTS == 'true' && success()
+      uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
+      with:
+        name: CoverageReport-AcceptanceTests # artifact name
+        path: coveragereport-a # directory containing files to upload
+    - name: Publish coverage in job summary # only applicable if 'MarkdownSummaryGithub' or one of the other Markdown report types is generated
       run: |
         echo Listing files of MD report...
-        find coveragereport-md -type f -print | sort
-        echo Publishing coverage in build summary...
-        cat coveragereport-md/SummaryGithub.md >> $GITHUB_STEP_SUMMARY # Adjust path and filename if necessary
+        find coveragereport-u/*.md -type f -print | sort
+        find coveragereport-a/*.md -type f -print | sort
+        # Re-format both MD-files for better presentation
+        file_u="coveragereport-u/SummaryGithub.md"
+        file_a="coveragereport-a/SummaryGithub.md"
+        md='| _Coverage Matrix_ | Line | Branch |'$'\n'
+        md+='| - | - | - |'$'\n'
+        line=$(grep -F "|**Ocelot.Administration.IdentityServer4**|" $file_u)
+        line="${line/Ocelot.Administration.IdentityServer4/Unit}"
+        line="${line//\*\*/ }"
+        md+=$line$'\n'
+        line=$(grep -F "|**Ocelot.Administration.IdentityServer4**|" $file_a)
+        line="${line/Ocelot.Administration.IdentityServer4/Acceptance}"
+        line="${line//\*\*/ }"
+        md+=$line$'\n'$'\n'
+        md+='---'$'\n'
+        # echo Matrix markdown is "$md"
+        escaped_md="${md//|/\\|}"
+        escaped_md="${escaped_md//./\\.}"
+        escaped_md="${escaped_md//$'\n'/\\n}"
+        # echo Escaped markdown is $escaped_md
+        echo Reformatting MD-files...
+        sed -i 's/# Summary/# Code Coverage Summary/g' $file_u
+        sed -i "1a $escaped_md" $file_u # insert markdown-string after the 1st line
+        sed -i 's|<details open><summary>Summary</summary>|<details><summary>Unit Tests</summary>|g' $file_u
+        sed -i 's/## Coverage/## Unit Test Coverage/g' $file_u
+        sed -i 's/# Summary/\n---\n/g' $file_a
+        sed -i 's|<details open><summary>Summary</summary>|<details><summary>Acceptance Tests</summary>|g' $file_a
+        sed -i 's/## Coverage/## Acceptance Test Coverage/g' $file_a
+        # Adding a job summary -> https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions#adding-a-job-summary
+        echo Publishing coverage in job summary...
+        cat $file_u >> $GITHUB_STEP_SUMMARY
+        cat $file_a >> $GITHUB_STEP_SUMMARY
       shell: bash
-
-    # The action below replaces the following command: dotnet tool run reportgenerator -reports:$coverage_file -targetdir:coveragereport -reporttypes:HtmlInline
-    # Docs: https://reportgenerator.io/
-    - name: Generate coverage report (HTML)
-      if: steps.files.outputs.COVERAGE_FILE_EXISTS == 'true'
-      uses: danielpalme/ReportGenerator-GitHub-Action@5.4.7 # Docs: https://github.com/marketplace/actions/reportgenerator
-      with:
-        reports: ${{ steps.files.outputs.COVERAGE_FILE }}
-        targetdir: coveragereport
-        reporttypes: HtmlInline # Html is applicable for websites only
-    - name: List HTML report files
-      run: |
-        echo Listing files of HTML report...
-        find coveragereport -type f -print | sort
-    - name: Upload coverage HTML-report artifact
-      uses: actions/upload-artifact@v4 # https://github.com/actions/upload-artifact
-      with:
-        name: CoverageReport-html
-        path: coveragereport/*.html
 
   publish:
     needs: build
@@ -156,7 +221,7 @@ jobs:
         run: dotnet restore ./Ocelot.Administration.IdentityServer4.sln
 
       - name: Build project
-        run: dotnet build ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --no-restore
+        run: dotnet build ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
 
       - name: Pack project
         run: dotnet pack ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --output ./packages

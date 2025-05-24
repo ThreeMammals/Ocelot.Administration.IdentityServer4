@@ -100,12 +100,8 @@ public static class OcelotBuilderExtensions
     [
         new(configuration.ApiName, configuration.ApiName)
         {
-            ApiSecrets =
-            [
-                new()
-                {
-                    Value = configuration.ApiSecret.Sha256(),
-                },
+            ApiSecrets = [
+                new() { Value = configuration.ApiSecret.Sha256() },
             ],
         },
     ];
