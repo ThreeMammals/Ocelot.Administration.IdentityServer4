@@ -151,7 +151,7 @@ jobs:
         echo Listing files of MD report...
         find coveragereport-u/*.md -type f -print | sort
         find coveragereport-a/*.md -type f -print | sort
-        # Re-format both MD-files for better presentation
+        # Reformat both MD-files for better presentation
         file_u="coveragereport-u/SummaryGithub.md"
         file_a="coveragereport-a/SummaryGithub.md"
         md='| _Coverage Matrix_ | Line | Branch |'$'\n'
@@ -165,19 +165,23 @@ jobs:
         line="${line//\*\*/ }"
         md+=$line$'\n'$'\n'
         md+='---'$'\n'
-        # echo Matrix markdown is "$md"
+        #echo Matrix markdown is "$md"
         escaped_md="${md//|/\\|}"
         escaped_md="${escaped_md//./\\.}"
         escaped_md="${escaped_md//$'\n'/\\n}"
-        # echo Escaped markdown is $escaped_md
+        #echo Escaped markdown is $escaped_md
         echo Reformatting MD-files...
+        # Unit
         sed -i 's/# Summary/# Code Coverage Summary/g' $file_u
         sed -i "1a $escaped_md" $file_u # insert markdown-string after the 1st line
-        sed -i 's|<details open><summary>Summary</summary>|<details><summary>Unit Tests</summary>|g' $file_u
-        sed -i 's/## Coverage/## Unit Test Coverage/g' $file_u
+        sed -i 's|<details open><summary>Summary</summary>|<details><summary>Coverage Summary</summary>|g' $file_u
+        sed -i '/## Coverage/d' $file_u # delete line
+        sed -i '/<details><summary>Coverage Summary/i ## Unit Test Coverage' $file_u # insert line
+        # Acceptance
         sed -i 's/# Summary/\n---\n/g' $file_a
-        sed -i 's|<details open><summary>Summary</summary>|<details><summary>Acceptance Tests</summary>|g' $file_a
-        sed -i 's/## Coverage/## Acceptance Test Coverage/g' $file_a
+        sed -i 's|<details open><summary>Summary</summary>|<details><summary>Coverage Summary</summary>|g' $file_a
+        sed -i '/## Coverage/d' $file_a # delete line
+        sed -i '/<details><summary>Coverage Summary/i ## Acceptance Test Coverage' $file_a # insert line
         # Adding a job summary -> https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions#adding-a-job-summary
         echo Publishing coverage in job summary...
         cat $file_u >> $GITHUB_STEP_SUMMARY
@@ -220,11 +224,10 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ./Ocelot.Administration.IdentityServer4.sln
 
-      - name: Build project
-        run: dotnet build ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
-
+      # - name: Build project
+      #   run: dotnet build ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
       - name: Pack project
-        run: dotnet pack ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --output ./packages
+        run: dotnet pack ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --output ./packages /p:ContinuousIntegrationBuild=true
 
       - name: Publish to GitHub Packages
         run: dotnet nuget push ./packages/*.nupkg --source "https://nuget.pkg.github.com/ThreeMammals/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
