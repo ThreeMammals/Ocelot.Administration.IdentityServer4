@@ -9,10 +9,10 @@
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	  <!--Package properties-->
-    <Version>24.0.0-beta.5</Version>
+    <Version>24.0.0-beta.6</Version>
     <PackageId>Ocelot.Administration.IdentityServer4</PackageId>
     <PackageDescription>Provides Ocelot extensions to use the Administration API and IdentityServer4 dependencies that come with it</PackageDescription>
-    <PackageReleaseNotes>https://github.com/ThreeMammals/Ocelot.Administration.IdentityServer4/releases</PackageReleaseNotes>
+    <PackageReleaseNotes>https://github.com/ThreeMammals/Ocelot.Administration.IdentityServer4/releases/tag/v24.0</PackageReleaseNotes>
     <PackageTags>Gateway;.NET;Ocelot;IdentityServer4</PackageTags>
     <PackageIcon>ocelot_icon.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>

@@ -224,8 +224,6 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ./Ocelot.Administration.IdentityServer4.sln
 
-      # - name: Build project
-      #   run: dotnet build ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --no-restore /p:ContinuousIntegrationBuild=true
       - name: Pack project
         run: dotnet pack ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --output ./packages /p:ContinuousIntegrationBuild=true
 

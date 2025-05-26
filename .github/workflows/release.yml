@@ -1,0 +1,117 @@
+# Releases non-beta versions, without 'beta*' suffix
+name: Release Package
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+      - name: .NET Info
+        run: dotnet --info
+
+      - name: Install XML tools
+        run: |
+          sudo apt update
+          sudo apt install libxml2-utils xmlstarlet
+      - name: Read XML
+        id: xml
+        run: |
+          xml_value=$(xmllint --xpath "string(//Project/PropertyGroup/Version)" ./src/Ocelot.Administration.IdentityServer4.csproj)
+          echo Version: $xml_value
+          echo "Version=$xml_value" >> $GITHUB_OUTPUT
+          xml_value=$(xmllint --xpath "string((//Project/ItemGroup)[2]/PackageReference[@Include='Ocelot']/@Version)" ./src/Ocelot.Administration.IdentityServer4.csproj)
+          echo Ocelot Ref Ver: $xml_value
+          echo "OcelotRefVer=$xml_value" >> $GITHUB_OUTPUT
+          xml_value=$(xmllint --xpath "string((//Project/ItemGroup)[2]/PackageReference[@Include='IdentityServer4']/@Version)" ./src/Ocelot.Administration.IdentityServer4.csproj)
+          echo IdentityServer4 Ref Ver: $xml_value
+          echo "IdentityServer4RefVer=$xml_value" >> $GITHUB_OUTPUT
+      # Replace Version, PackageReleaseNotes in .csproj
+      - name: Update XML in .csproj
+        id: ver
+        run: |
+          echo Version: ${{ steps.xml.outputs.Version }}
+          echo Ocelot Ref Ver: ${{ steps.xml.outputs.OcelotRefVer }}
+          echo IdentityServer4 Ref Ver: ${{ steps.xml.outputs.IdentityServer4RefVer }}
+          s_Version="${{ steps.xml.outputs.Version }}"
+          if [[ "$s_Version" == *-* ]]; then
+            echo Version contains '-'
+            first_part=$(echo "$s_Version" | cut -d'-' -f1)
+            echo First part: $first_part
+            new_value=$first_part
+          else
+            new_value=$s_Version
+          fi
+          echo Going to replace version... from $s_Version to $new_value
+          xmlstarlet ed -L -u "//Project/PropertyGroup/Version" -v "$new_value" ./src/Ocelot.Administration.IdentityServer4.csproj
+          xml_value=$(xmllint --xpath "string(//Project/PropertyGroup/Version)" ./src/Ocelot.Administration.IdentityServer4.csproj)
+          echo Replaced Version: $xml_value
+          echo "PkgVersion=$xml_value" >> $GITHUB_OUTPUT
+
+          xml_value=$(xmllint --xpath "string(//Project/PropertyGroup/PackageReleaseNotes)" ./src/Ocelot.Administration.IdentityServer4.csproj)
+          tag_name="${{ github.ref_name }}"
+          echo Going to replace release notes tag... in $xml_value to $tag_name
+          new_value="${xml_value/tag*/tag\/$tag_name}"
+          xmlstarlet ed -L -u "//Project/PropertyGroup/PackageReleaseNotes" -v "$new_value" ./src/Ocelot.Administration.IdentityServer4.csproj
+          xml_value=$(xmllint --xpath "string(//Project/PropertyGroup/PackageReleaseNotes)" ./src/Ocelot.Administration.IdentityServer4.csproj)
+          echo Replaced PackageReleaseNotes: $xml_value
+
+      - name: Restore dependencies
+        run: dotnet restore ./Ocelot.Administration.IdentityServer4.sln
+      - name: Pack project
+        run: dotnet pack ./src/Ocelot.Administration.IdentityServer4.csproj --configuration Release --output ./packages /p:ContinuousIntegrationBuild=true
+      # - name: Publish to GitHub Packages
+      #   run: dotnet nuget push ./packages/*.nupkg --source "https://nuget.pkg.github.com/ThreeMammals/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+      # - name: Publish to NuGet
+      #   run: dotnet nuget push ./packages/*.nupkg --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_API_KEY_2025 }} --skip-duplicate
+
+      - name: GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          PACKAGE_VERSION: ${{ steps.ver.outputs.PkgVersion }}
+          OCELOT_VERSION: ${{ steps.xml.outputs.OcelotRefVer }}
+          IS4_VERSION: ${{ steps.xml.outputs.IdentityServer4RefVer }}
+        with:
+          tag_name: 0.0.3 # Name of a tag. defaults to github.ref_name
+          body: |
+            ## Version [${{ env.PACKAGE_VERSION }}](https://www.nuget.org/packages/Ocelot.Administration.IdentityServer4/${{ env.PACKAGE_VERSION }})
+            > For Ocelot release: [${{ env.OCELOT_VERSION }}](https://github.com/ThreeMammals/Ocelot/releases/tag/${{ env.OCELOT_VERSION }})
+            > Ocelot package: v[${{ env.OCELOT_VERSION }}](https://www.nuget.org/packages/Ocelot/${{ env.OCELOT_VERSION }})
+            > IdentityServer4 package: v[${{ env.IS4_VERSION }}](https://www.nuget.org/packages/IdentityServer4/${{ env.IS4_VERSION }})
+
+            This release deprecates the package due to the deprecation of [IdentityServer4](https://www.nuget.org/packages/IdentityServer4).
+            For more details, see Ocelot [Releases](https://github.com/ThreeMammals/Ocelot/releases) &rarr; [${{ env.OCELOT_VERSION }}](https://www.nuget.org/packages/Ocelot/${{ env.OCELOT_VERSION }}) &rarr; **What's Updated?** &rarr; **Administration**
+          files: |
+            packages/*.*pkg
+          make_latest: true
+      - name: Release to Ocelot Repo
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        env:
+          PACKAGE_TAG: ${{ github.ref_name }}
+          PACKAGE_VERSION: ${{ steps.ver.outputs.PkgVersion }}
+          OCELOT_VERSION: ${{ steps.xml.outputs.OcelotRefVer }}
+        with:
+          repository: ThreeMammals/Ocelot
+          token: ${{ secrets.OCELOT_EXTENSION_PACKAGE_RELEASE_TOKEN_0 }}
+          body: |
+            ## Ocelot.Administration.IdentityServer4 version [${{ env.PACKAGE_VERSION }}](https://www.nuget.org/packages/Ocelot.Administration.IdentityServer4/${{ env.PACKAGE_VERSION }})
+            > Ocelot release: [${{ env.OCELOT_VERSION }}](https://github.com/ThreeMammals/Ocelot/releases/tag/${{ env.OCELOT_VERSION }})
+            > Ocelot.Administration.IdentityServer4 release: [${{ env.PACKAGE_VERSION }}](https://github.com/ThreeMammals/Ocelot.Administration.IdentityServer4/releases/tag/${{ env.PACKAGE_TAG }})
+          files: |
+            packages/*.*pkg
+          prerelease: true
