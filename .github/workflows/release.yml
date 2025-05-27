@@ -67,6 +67,13 @@ jobs:
           xmlstarlet ed -L -u "//Project/PropertyGroup/PackageReleaseNotes" -v "$new_value" ./src/Ocelot.Administration.IdentityServer4.csproj
           xml_value=$(xmllint --xpath "string(//Project/PropertyGroup/PackageReleaseNotes)" ./src/Ocelot.Administration.IdentityServer4.csproj)
           echo Replaced PackageReleaseNotes: $xml_value
+      - name: README.md
+        run: |
+          # Replaces relative GitHub paths with NuGet-friendly absolute URLs
+          sed -i 's|/ocelot_icon.png|https://raw.githubusercontent.com/ThreeMammals/Ocelot.Administration.IdentityServer4/refs/heads/main/ocelot_icon.png|g; s|/idser4_logo.png|https://raw.githubusercontent.com/ThreeMammals/Ocelot.Administration.IdentityServer4/refs/heads/main/idser4_logo.png|g' README.md
+          echo New content of README.md
+          echo ------------------------
+          cat README.md
 
       - name: Restore dependencies
         run: dotnet restore ./Ocelot.Administration.IdentityServer4.sln
@@ -78,7 +85,7 @@ jobs:
         run: dotnet nuget push ./packages/*.nupkg --source "https://api.nuget.org/v3/index.json" --api-key ${{ secrets.NUGET_API_KEY_2025 }} --skip-duplicate
 
       - name: GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2 # https://github.com/softprops/action-gh-release
         env:
           PACKAGE_VERSION: ${{ steps.ver.outputs.PkgVersion }}
           OCELOT_VERSION: ${{ steps.xml.outputs.OcelotRefVer }}
@@ -98,7 +105,7 @@ jobs:
           prerelease: false
           make_latest: true
       - name: Release to Ocelot Repo
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2 # https://github.com/softprops/action-gh-release
         if: github.ref_type == 'tag'
         env:
           PACKAGE_TAG: ${{ github.ref_name }}
@@ -106,7 +113,10 @@ jobs:
           OCELOT_VERSION: ${{ steps.xml.outputs.OcelotRefVer }}
         with:
           repository: ThreeMammals/Ocelot
-          token: ${{ secrets.OCELOT_EXTENSION_PACKAGE_RELEASE_TOKEN_0 }}
+          token: ${{ secrets.OCELOT_EXTENSION_PACKAGE_RELEASE_TOKEN }}
+          name: Ocelot.Administration.IdentityServer4 ${{ env.PACKAGE_TAG }}
+          tag_name: oa${{ env.PACKAGE_VERSION }}
+          target_commitish: develop # top commit must contain updated docs
           body: |
             ## Ocelot.Administration.IdentityServer4 version [${{ env.PACKAGE_VERSION }}](https://www.nuget.org/packages/Ocelot.Administration.IdentityServer4/${{ env.PACKAGE_VERSION }})
             > Ocelot release: [${{ env.OCELOT_VERSION }}](https://github.com/ThreeMammals/Ocelot/releases/tag/${{ env.OCELOT_VERSION }})
